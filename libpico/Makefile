@@ -1,6 +1,7 @@
 #Set your platform dependent variables in this file:
 include Makefile.inc
 
+default: libpico3.a
 
 cpico.o: cpico.c
 	$(CC) $(CFLAGS) $(PYTHONINC) $(NUMPYINC) -c  $? 
