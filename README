@@ -1,6 +1,12 @@
 PICO v3
 Feel free to direct questions/comments to Marius Millea (mmillea@ucdavis.edu)
 
-* For pypico, add the libpico directory to your PYTHONPATH variable and run ">>> import pypico"
-* For C/Fortran library, run "make" from the libpico directory (also see Makefile.inc.example)
+* If you just want to call PICO from Python, you don't need to 
+  compile anything. Simply add the libpico directory to your 
+  PYTHONPATH variable and from Python run "import pypico"
+
+* For the C/Fortran library, in the libpico directory, copy 
+  Makefile.inc.example to Makefile.inc and make any necessary 
+  platform specific changes to that file. Then run "make".
+
 * For CosmoMC plugin see plugins/cosmomc

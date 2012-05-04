@@ -2,17 +2,17 @@
 #Edit this file with your platform dependent changes and save it as Makefile.inc
 #
 
-
 #The CAMB directory
 CAMBDIR =  
-
-#Link Python and Numpy
-NUMPYINC = -I /usr/include/numpy
-PYTHONINC = $(shell python-config --include)
-PYTHONLINK = $(shell python-config --libs)
 
 #Compiling the C/Fortran wrapper code with optimizations won't speed things up significantly.
 CC = gcc
 CFLAGS = -g -O0
-F90 = gfortran
+F90C = gfortran
 FFLAGS = -g -O0
+
+#Link Python and Numpy
+NUMPYINC = -I $(shell python -c "import numpy; print numpy.get_include()")
+PYTHONINC = $(shell python-config --include)
+PYTHONLINK = $(shell python-config --libs)
+
