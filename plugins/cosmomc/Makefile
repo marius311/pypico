@@ -1,11 +1,8 @@
 #These are the necessary changes to the CosmoMC Makefile
 
-PICODIR = 
-
-INCLUDEPICO = -I$(PICODIR)
-LINKPICO = -L$(PICODIR) -lpico3 $(shell python-config --ldflags)
-INCLUDE = $(INCLUDEPICO)
-
+#The custom CMB_Cls file
 CLSFILE = CMB_Cls_pico.o
 
-LINKFLAGS = -L../camb -lcamb $(LAPACKL) $(LINKPICO)
+#Extra include and link flags
+INCLUDE += $(shell python -c "import pypico; print pypico.get_include()")
+LINKFLAGS += $(shell python -c "import pypico; print pypico.get_link()")
