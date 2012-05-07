@@ -25,7 +25,7 @@ PyObject* Py_Check(PyObject *result){
 PyObject* pico_load(char *file){
 	PyObject *pPico, *pFunc, *pArg;
     Py_Initialize();
-    Py_Check(pFunc = PyObject_GetAttrString(get_pico_module(), "loadpico"));
+    Py_Check(pFunc = PyObject_GetAttrString(get_pico_module(), "load_pico"));
 	Py_Check(pArg = Py_BuildValue("(s)",file));
 	Py_Check(pPico = PyObject_CallObject(pFunc,pArg));
 	Py_DECREF(pArg);
@@ -82,7 +82,7 @@ double* pico_read_result(PyObject *pResult, char *which, int len){
 	}
 	else{
 		if (len > PyArray_DIMS(pArr)[0]){
-			printf("Asking for higher length (e.g. lmax, kmax) than PICO has calculated.");
+			printf("Asking for higher length (e.g. lmax, kmax) than PICO has calculated.\n");
 			exit(1);
 		}
 		else{
