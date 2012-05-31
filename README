@@ -2,6 +2,99 @@
 PICO (Parameters for the Impatient Cosmologist)
 ===============================================
 
-Marius Millea (mmillea@ucdavis.edu), Ben Wandelt, Lloyd Knox
+Installation
+===========================
 
-PICO is a tool which speeds up the calculation of CMB powerspectra and matter transfer functions by interpolating these quantities as a function of cosmological parameters.
+The easiest way to install *PICO* is via::
+
+    $ pip install pypico
+
+On older platforms which do not have ``pip`` installed you 
+can also try::
+
+    $ easy_install pypico
+
+If neither option works, you can manually download the *PICO* 
+package from `<http://pypi.python.org/pypi/pypico>`_, then extract it
+and run::
+
+    $ python setup.py install
+    
+    
+(If you don't have root access, note that all these commands accept 
+the option ``--user`` which installs *PICO* in your home directory.)
+    
+    
+Getting Data Files
+======================
+
+Once you have *PICO* installed, to do anything you'll need some data files
+which actually contain interpolated data. You can find them on 
+the PICO website at `<https://sites.google.com/a/ucdavis.edu/pico>`_.
+
+
+Installing Plugins for CAMB, CosmoMC, etc..
+===========================================
+
+If all you'd like to do it use *PICO* from Python with various data files
+then you do not need to do anything in this section. If on the other hand,
+you'd like to either
+
+* Plug *PICO* into your code which currently calls ``CAMB_GetResults``
+* Plug *PICO* into CosmoMC
+
+then you'll need to follow these instructions. 
+
+When you installed *PICO*, a shared library ``libpico.so`` was created
+which allows *PICO* to be called from C, C++, Fortran, or any other 
+language which can understand the symbols in the library. To compile and link 
+your code against this library, *PICO* provides an easy way to get 
+include and link flags on your platform. Simply call::
+    
+    $ python -c "import pypico; print pypico.get_include()"
+    $ python -c "import pypico; print pypico.get_link()"
+    
+to print out the necessary flags.
+
+
+CAMB Plugin
+-----------
+
+If your code is set up to call the CAMB function ``CAMB_GetResults``, then 
+it should be trivial to use the *PICO* version called ``PICO_GetResults`` instead.
+The *PICO* version will fall back on the CAMB version if called with parameters
+for which it cannot calculate the relevant quantities. 
+
+To install the CAMB plugin, do the following:
+
+* Copy ``plugins/camb/pico_camb.f90`` to the folder containing your code
+* Add ``use fpico`` to your code
+* Add a call ``fpico_initialize(file)`` to load a *PICO* datafile.
+* Replace ``CAMB_GetResults`` with ``PICO_GetResults``
+* Compile your code, making sure to use the correct include/link flags (as described above).
+
+
+
+CosmoMC Plugin
+--------------
+
+*PICO* can also be plugged into CosmoMC. 
+
+To install the CosmoMC plugin, do the following:
+
+* Copy ``plugins/cosmomc/CMB_Cls_picaso.f90`` and ``plugins/camb/pico_camb.f90`` 
+  to the CosmoMC source folder
+* Replace ``driver.f90`` in the CosmoMC source folder with the one in ``plugins/cosmomc``
+* In your CosmoMC Makefile, replace references to ``CMB_Cls_simple`` 
+  with references to references to ``CMB_Cls_pico`` 
+* Add the correct include/link flags to the Makefile (as described above).
+* Add the a key ``pico_datafile`` to your parameter file.
+
+
+CosmoSlik Plugin
+----------------
+
+To install the CosmoSlik plugin, copy ``plugins/cosmoslik/pico.py`` to 
+the ``cosmoslik/models/`` folder. 
+
+
