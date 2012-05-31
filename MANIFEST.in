@@ -1,0 +1,2 @@
+include pypico/cpico.h pypico/cpico.c pypico/fpico_cwrap.c pypico/fpico.f90
+graft plugins/*

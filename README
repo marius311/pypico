@@ -1,12 +1,7 @@
-PICO v3
-Feel free to direct questions/comments to Marius Millea (mmillea@ucdavis.edu)
+===============================================
+PICO (Parameters for the Impatient Cosmologist)
+===============================================
 
-* If you just want to call PICO from Python, you don't need to 
-  compile anything. Simply add the libpico directory to your 
-  PYTHONPATH variable and from Python run "import pypico"
+Marius Millea (mmillea@ucdavis.edu), Ben Wandelt, Lloyd Knox
 
-* For the C/Fortran library, in the libpico directory, copy 
-  Makefile.inc.example to Makefile.inc and make any necessary 
-  platform specific changes to that file. Then run "make".
-
-* For CosmoMC plugin see plugins/cosmomc
+PICO is a tool which speeds up the calculation of CMB powerspectra and matter transfer functions by interpolating these quantities as a function of cosmological parameters.
