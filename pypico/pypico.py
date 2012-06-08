@@ -1,11 +1,14 @@
 """
-The current PICO version, specified as 'release.major.minor'
+The current PICO version, specified as 'major.minor.micro'
 Minor version are backwards compatible, whereas major version are not.
 """
-_version = '3.0.0'
+_version = '3.1.0'
 
-import re, cPickle, imp, os, sys, numpy, subprocess
+import cPickle, imp, os, sys, numpy, subprocess, hashlib, time
 
+
+""" Loaded datafiles will residue in this empty module. """
+sys.modules['pypico.datafiles']=imp.new_module('pypico.datafiles')
 
 
 def get_include():
@@ -29,7 +32,9 @@ class PICO():
     are vectors, then the code in this library can be used to call the 
     PICO object from C/Fortran.
     
-    The fundamental methods are inputs(), outputs(), and get().
+    The fundamental methods are inputs() and outputs() which list possible
+    inputs and returned outputs, and get(**inputs) which gets the outputs
+    given some inputs.
     """
     
     def inputs(self):
@@ -67,21 +72,11 @@ class CantUsePICO(Exception):
 
     
     
-    
-    
-    
-""" This global dictionary holds loaded PICO objects so they are not garbage collected."""
-_picostages = {}
-
-
 def _version_ok(version):
     """Checks for compatibility of a PICO datafile."""
     global _version
     mine = map(int,_version.split('.'))
-    if version!=None: theirs = map(int,version.split('.'))
-    else: 
-        print "Warning: PICO datafile does not have version. Can't check compatibility."
-        return True
+    theirs = map(int,version.split('.'))
     return mine[:2]==theirs[:2] and mine[2]>=theirs[2]
 
 
@@ -93,56 +88,57 @@ def load_pico(datafile, module=None, check_version=True):
     be used instead of the code contained in the datafile. This is generally 
     used for debugging purposes only.
     """
-    global _picostages
     
     try:
-        with open(datafile) as f: contents = cPickle.load(f)
-        if len(contents)==2: (code, data), version = contents, None
-        elif len(contents)==3: code, data, version = contents
-        else: raise Exception("Unrecognizable PICO datafile format.")
-        
+        with open(datafile) as f: data = cPickle.load(f)
     except Exception as e:
         raise Exception("Failed to open PICO datafile '%s'\n%s"%(datafile,e.message))
-        
-    if module==None:
-        try:
-            mymod = imp.new_module('picostage (%s)'%os.path.basename(datafile).replace('.','_'))
-            exec code in mymod.__dict__
-        except Exception as e:
-            raise Exception("Error executing PICO code for datafile '%s'\n%s"%(datafile,e))
+    
+    if module: 
+        with open(module) as f: code = f.read()
     else:
-        sys.path.append(os.path.dirname(module))
-        mymod = __import__(os.path.basename(module).replace('.py',''))
-        reload(mymod)
+        code = data['code']
+        
+    try:
+        mymod = imp.new_module(data['module_name'])
+        exec code in mymod.__dict__
+    except Exception as e:
+        raise Exception("Error executing PICO code for datafile '%s'\n%s"%(datafile,e))
 
-    _picostages[mymod.__name__]=mymod
+    sys.modules[data['module_name']]=mymod
     
-    if check_version and not _version_ok(version):
-        raise Exception("Your PICO version is %s but this datafile was created using an incompatible older version, %s.")
+    if check_version:
+        if 'version' not in data:
+            print "Warning: PICO datafile does not have version. Can't check compatibility."
+        elif not _version_ok(data.get('version')):
+            raise Exception("You PICO version (%s) and the PICO version used to create the datafile '%s' (%s) are incompatible."%(_version,datafile,data['version']))
     
-    pico = mymod.get_pico(data)
-    pico._code = code
+    pico = cPickle.loads(data['pico'])
+    pico._code = data['code']
     return pico
 
     
-def create_pico(data,code,datafile):
+def create_pico(codefile,datafile):
     """
     Create a PICO datafile.
     
-    A PICO datafile is a Python Pickle of a length 3 tuple containing (code, data, version).
-    When loading a PICO datafile, PICO evaluates the code contained in the datafile.
-    The code needs to define a function get_pico(data) which return a PICO object.
+    A PICO datafile is a Pickle of a dictionary which contains 
+    some Python code and an instance of a PICO class.
     
-    Arguments:
-        data - any Pickle-able Python object. 
-        code - if this is a path then loads the code from that file,
-               otherwise assumes this is a string containing the code.
-        datafile - the output datafile
+    Arguments:    
+        codefile - A path to Python module which contains a get_pico function. The 
+                   function should return a PICO object which gets Pickled into the 
+                   datafile.
+        datafile - Path for the output datafile
     """
-    if os.path.exists(code):
-        with open(code) as f: 
-            code = re.sub("###(.|\n)*?###","",f.read())
-            
-    with open(datafile,'w') as f: cPickle.dump((code,data,_version),f)
     
+    print "Creating PICO datafile..."
+    with open(codefile) as f: code = f.read()
+    name = 'pypico.datafiles.%s'%(hashlib.md5(os.path.abspath(codefile) + time.ctime()).hexdigest())
+    mymod = imp.new_module(name)
+    exec code in mymod.__dict__
+    sys.modules[name]=mymod
+    pico = mymod.get_pico()
+    print "Saving '%s'..."%(os.path.basename(datafile))
+    with open(datafile,'w') as f: cPickle.dump({'code':code,'module_name':name,'pico':cPickle.dumps(pico,protocol=2),'version':_version},f,protocol=2)
     

@@ -25,12 +25,29 @@ and run::
 the option ``--user`` which installs *PICO* in your home directory.)
     
     
-Getting Data Files
-======================
+Usage
+=====
 
 Once you have *PICO* installed, to do anything you'll need some data files
 which actually contain interpolated data. You can find them on 
 the PICO website at `<https://sites.google.com/a/ucdavis.edu/pico>`_.
+
+After that, typical usage is loading PICO data file::
+
+    >> import pypico
+    >> pico = pypico.load_pico("example_pico_file.dat")  
+
+To show possible inputs parameters and output values use::
+
+    >> pico.inputs()
+    >> pico.outputs()
+    
+And finally, to calculate output values, run::
+
+    >> pico.get(**inputs)
+    
+where ``inputs`` is a dictionary with keys for each input returned 
+by ``pico.inputs()``
 
 
 Installing Plugins for CAMB, CosmoMC, etc..
@@ -86,7 +103,7 @@ To install the CosmoMC plugin, do the following:
   to the CosmoMC source folder
 * Replace ``driver.f90`` in the CosmoMC source folder with the one in ``plugins/cosmomc``
 * In your CosmoMC Makefile, replace references to ``CMB_Cls_simple`` 
-  with references to references to ``CMB_Cls_pico`` 
+  with references to ``CMB_Cls_pico`` 
 * Add the correct include/link flags to the Makefile (as described above).
 * Add the a key ``pico_datafile`` to your parameter file.
 
@@ -96,5 +113,15 @@ CosmoSlik Plugin
 
 To install the CosmoSlik plugin, copy ``plugins/cosmoslik/pico.py`` to 
 the ``cosmoslik/models/`` folder. 
+
+
+Authors
+=======
+
+*PICO* is currently maintained by Marius Millea (feel free to send questions/comments to mmillea@ucdavis.edu). 
+
+It was originally created by Chad Fendt and Ben Wandelt (see `<http://arxiv.org/abs/0712.0194>`_) 
+
+
 
 
