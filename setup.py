@@ -11,7 +11,7 @@ config = Configuration('pypico',
    url='http://pypi.python.org/pypi/pypico/',
    license='LICENSE.txt',
    description='Quickly compute the CMB powerspectra and matter transfer functions.',
-   long_description=open('README.pypi').read(),
+   long_description=open('README').read(),
 )
 
 config.add_installed_library('pico', 
