@@ -3,28 +3,16 @@ PICO (Parameters for the Impatient Cosmologist)
 ===============================================
 
 Installation
-===========================
+============
 
-The easiest way to install *PICO* is via::
-
-    $ pip install pypico
-
-On older platforms which do not have ``pip`` installed you 
-can also try::
-
-    $ easy_install pypico
-
-If neither option works, you can manually download the *PICO* 
-package from `<http://pypi.python.org/pypi/pypico>`_, then extract it
-and run::
+To install *PICO* type::
 
     $ python setup.py install
     
+(If you don't have root access, you can append the option ``--user`` 
+which installs *PICO* under your home directory.)
     
-(If you don't have root access, note that all these commands accept 
-the option ``--user`` which installs *PICO* in your home directory.)
-    
-    
+
 Usage
 =====
 
@@ -32,7 +20,7 @@ Once you have *PICO* installed, to do anything you'll need some data files
 which actually contain interpolated data. You can find them on 
 the PICO website at `<https://sites.google.com/a/ucdavis.edu/pico>`_.
 
-After that, typical usage is loading PICO data file::
+After that, typical usage is loading a PICO data file::
 
     >> import pypico
     >> pico = pypico.load_pico("example_pico_file.dat")  
@@ -62,16 +50,27 @@ you'd like to either
 
 then you'll need to follow these instructions. 
 
-When you installed *PICO*, a shared library ``libpico.so`` was created
+Linking
+-------
+
+When you installed *PICO*, a static library ``libpico.a`` was created
 which allows *PICO* to be called from C, C++, Fortran, or any other 
-language which can understand the symbols in the library. To compile and link 
+language which can understand the symbols in the library. To link 
 your code against this library, *PICO* provides an easy way to get 
-include and link flags on your platform. Simply call::
+include and link flags on your platform. To print out the necessary flags, call::
     
     $ python -c "import pypico; print pypico.get_include()"
     $ python -c "import pypico; print pypico.get_link()"
     
-to print out the necessary flags.
+
+Plugin Folder
+-------------
+
+You can find the various plugin files in a folder `plugin` in the archive.
+If you installed *PICO* via `pip` or `easy_install`, you can find the location
+of the plugins by running::
+
+    $ python -c "import pypico; print pypico.get_folder()"
 
 
 CAMB Plugin
@@ -85,8 +84,7 @@ for which it cannot calculate the relevant quantities.
 To install the CAMB plugin, do the following:
 
 * Copy ``plugins/camb/pico_camb.f90`` to the folder containing your code
-* Add ``use fpico`` to your code
-* Add a call ``fpico_initialize(file)`` to load a *PICO* datafile.
+* Add a call ``fpico_load(file)`` to load a *PICO* datafile.
 * Replace ``CAMB_GetResults`` with ``PICO_GetResults``
 * Compile your code, making sure to use the correct include/link flags (as described above).
 

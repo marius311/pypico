@@ -1,6 +1,5 @@
 module pico_camb
 
-    use fpico
     use CAMBmain
     use ModelParams
     use ModelData
@@ -12,6 +11,7 @@ contains
         type(CAMBparams) :: P
         integer, optional :: error !Zero if OK
         real(8) :: fac
+        logical :: success
 
         call CAMBParams_Set(P)
 
@@ -34,7 +34,8 @@ contains
         call fpico_set_param("pivot_scalar",p%InitPower%k_0_scalar)
         call fpico_set_param("re_optical_depth",p%Reion%optical_depth)
 
-        if (fpico_compute_result()) then
+        call fpico_compute_result(success)
+        if (success) then
             if (allocated(Cl_scalar)) deallocate(Cl_scalar)
             if (allocated(Cl_tensor)) deallocate(Cl_tensor)
             if (allocated(Cl_lensed)) deallocate(Cl_lensed)
@@ -42,22 +43,31 @@ contains
             allocate(Cl_tensor(lmin:P%Max_l_tensor,1,CT_Temp:CT_Cross))
             allocate(Cl_lensed(lmin:P%Max_l,1,CT_Temp:CT_Cross))
 
-            Cl_scalar(:,1,C_Temp) = fpico_read_result("scalar_TT",lmin,P%Max_l)
-            Cl_scalar(:,1,C_Cross) = fpico_read_result("scalar_TE",lmin,P%Max_l)
-            Cl_scalar(:,1,C_E) = fpico_read_result("scalar_EE",lmin,P%Max_l)
-            Cl_tensor(:,1,CT_Temp) = fpico_read_result("tensor_TT",lmin,P%Max_l_tensor)
-            Cl_tensor(:,1,CT_Cross) = fpico_read_result("tensor_TE",lmin,P%Max_l_tensor)
-            Cl_tensor(:,1,CT_E) = fpico_read_result("tensor_EE",lmin,P%Max_l_tensor)
-            Cl_tensor(:,1,CT_B) = fpico_read_result("tensor_BB",lmin,P%Max_l_tensor)
-            Cl_lensed(:,1,CT_Temp) = fpico_read_result("lensed_TT",lmin,P%Max_l)
-            Cl_lensed(:,1,CT_Cross) = fpico_read_result("lensed_TE",lmin,P%Max_l)
-            Cl_lensed(:,1,CT_E) = fpico_read_result("lensed_EE",lmin,P%Max_l)
-            Cl_lensed(:,1,CT_B) = fpico_read_result("lensed_BB",lmin,P%Max_l)
-
             fac = (2.726e6)**2
-            Cl_scalar = Cl_scalar / fac
-            Cl_tensor = Cl_tensor / fac
-            Cl_lensed = Cl_lensed / fac
+
+            if (P%WantScalars) then
+                call fpico_read_output("scalar_TT",Cl_scalar(:,1,C_Temp),lmin,P%Max_l)
+                call fpico_read_output("scalar_TE",Cl_scalar(:,1,C_Cross),lmin,P%Max_l)
+                call fpico_read_output("scalar_EE",Cl_scalar(:,1,C_E),lmin,P%Max_l)
+                Cl_scalar = Cl_scalar / fac
+            end if
+
+            if (P%WantTensors) then
+                call fpico_read_output("tensor_TT",Cl_tensor(:,1,CT_Temp),lmin,P%Max_l_tensor)
+                call fpico_read_output("tensor_TE",Cl_tensor(:,1,CT_Cross),lmin,P%Max_l_tensor)
+                call fpico_read_output("tensor_EE",Cl_tensor(:,1,CT_E),lmin,P%Max_l_tensor)
+                call fpico_read_output("tensor_BB",Cl_tensor(:,1,CT_B),lmin,P%Max_l_tensor)
+                Cl_tensor = Cl_tensor / fac
+            end if
+
+            if (P%DoLensing) then
+                call fpico_read_output("lensed_TT",Cl_lensed(:,1,CT_Temp),lmin,P%Max_l)
+                call fpico_read_output("lensed_TE",Cl_lensed(:,1,CT_Cross),lmin,P%Max_l)
+                call fpico_read_output("lensed_EE",Cl_lensed(:,1,CT_E),lmin,P%Max_l)
+                call fpico_read_output("lensed_BB",Cl_lensed(:,1,CT_B),lmin,P%Max_l)
+                Cl_lensed = Cl_lensed / fac
+            end if
+
         else
             call CAMB_GetResults(P,error)
         end if

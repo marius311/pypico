@@ -1,7 +1,8 @@
 """
-The current PICO version, specified as 'major.minor.micro'
-Minor version are backwards compatible, whereas major version are not.
+Parameters for the Impatient Cosmologist
+Author: Marius Millea
 """
+
 _version = '3.1.0'
 
 import cPickle, imp, os, sys, numpy, subprocess, hashlib, time
@@ -10,6 +11,9 @@ import cPickle, imp, os, sys, numpy, subprocess, hashlib, time
 """ Loaded datafiles will residue in this empty module. """
 sys.modules['pypico.datafiles']=imp.new_module('pypico.datafiles')
 
+def get_folder():
+    """Get the folder where PICO was installed"""
+    return os.path.dirname(os.path.abspath(__file__))
 
 def get_include():
     """Get include flags needed for compiling C/Fortran code with the PICO library."""
@@ -20,15 +24,16 @@ def get_include():
 
 def get_link():
     """Get link flags needed for linking C/Fortran code with the PICO library."""
-    return '-L%s -lpico3 '%os.path.dirname(os.path.abspath(__file__)) + \
+    return '-L%s -lpico '%os.path.dirname(os.path.abspath(__file__)) + \
             subprocess.check_output(['python-config','--libs']).strip()
 
 
 class PICO():
     """ 
-    A PICO class represents a mapping from input values to output values.
+    This is the base class for anyone creating a custom PICO datafile. 
+    It represents a mapping from input values to output values.
     
-    Additionally, if the input values are scalars and the output values 
+    Note that if the input values are scalars and the output values 
     are vectors, then the code in this library can be used to call the 
     PICO object from C/Fortran.
     

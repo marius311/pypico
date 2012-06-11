@@ -2,7 +2,19 @@
 
 PyObject *pPicoModule;
 
-PyObject* get_pico_module(){
+PyObject* Py_Check(PyObject *result){
+	if (result==NULL){
+		if (PyErr_Occurred()) PyErr_Print();
+		else printf("Unspecified Python error.");
+		exit(1);
+	}
+	else return result;
+}
+
+PyObject* get_pico_module(void){
+	/**
+	 * Returns the pypico module.
+	 */
 	if (!pPicoModule){
 		PyObject *pName;
 	    Py_Initialize();
@@ -13,16 +25,20 @@ PyObject* get_pico_module(){
 	return pPicoModule;
 }
 
-PyObject* Py_Check(PyObject *result){
-	if (result==NULL){
-		if (PyErr_Occurred()) PyErr_Print();
-		else printf("Unspecified Python error.");
-		exit(1);
-	}
-	else return result;
-}
 
 PyObject* pico_load(char *file){
+	/**
+	 * Load a PICO data file.
+	 *
+	 * Returns an object which can be passed to other PICO functions.
+	 *
+	 * Paramters:
+	 * ----------
+	 *
+	 * file : *char
+	 * 		The filename of the datafile
+	 *
+	 */
 	PyObject *pPico, *pFunc, *pArg;
     Py_Initialize();
     Py_Check(pFunc = PyObject_GetAttrString(get_pico_module(), "load_pico"));
@@ -33,6 +49,29 @@ PyObject* pico_load(char *file){
 }
 
 PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams){
+	/**
+	 * Compute the outputs given some inputs.
+	 *
+	 * This is equivalent to the Python command `pico.get(**inputs)`
+	 *
+	 * Specific arrays can can be read from the return object
+	 * by passing it pico_read_output.
+	 *
+	 * Parameters:
+	 * -----------
+	 *
+	 * pPico : *PyObject
+	 * 		The PICO object as loaded by `pico_load`
+	 * pParams : *PyObject
+	 * 		A Python dictionary object contains name-value input pairs.
+	 *
+	 */
+
+	if (pPico==NULL){
+		printf("Tried to call PICO without loading a datafile first.\n");
+		exit(1);
+	}
+
     PyObject *pArgs, *pResult, *pGet, *pCant;
     Py_Check(pArgs = PyTuple_New(0));
     Py_Check(pGet = PyObject_GetAttrString(pPico, "get"));
@@ -46,11 +85,32 @@ PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams){
     return pResult;
 }
 
-PyObject* pico_compute_result(PyObject *pPico, int nparams, char *names[], double values[]){
+
+PyObject* pico_compute_result(PyObject *pPico, int ninputs, char *names[], double values[]){
+	/**
+	 * Compute the outputs given some inputs.
+	 *
+	 * This is equivalent to the Python command `pico.get(**inputs)`
+	 *
+	 * Specific arrays can can be read from the return object
+	 * by passing it pico_read_output.
+	 *
+	 * Parameters:
+	 * -----------
+	 *
+	 * pPico : *PyObject
+	 * 		The PICO object as loaded by `pico_load`
+	 * ninputs : int
+	 * 		The number of inputs
+	 * names : *char[]
+	 * values : double[]
+	 * 		Length `ninputs` arrays of name-value pairs.
+	 *
+	 */
     PyObject *pParams, *pName, *pValue;
     int i;
     Py_Check(pParams = PyDict_New());
-    for (i=0; i<nparams; i++){
+    for (i=0; i<ninputs; i++){
 		Py_Check(pName = PyString_FromString(names[i]));
 		Py_Check(pValue = PyFloat_FromDouble(values[i]));
 		PyDict_SetItem(pParams,pName,pValue);
@@ -59,11 +119,19 @@ PyObject* pico_compute_result(PyObject *pPico, int nparams, char *names[], doubl
     return pico_compute_result_dict(pPico,pParams);
 }
 
-bool pico_has_output(PyObject *pPico, char* output){
+bool pico_has_output(PyObject *pPico, char* key){
+	/**
+	 * Return true if the PICO object outputs a given key.
+	 *
+	 * Equivalent to `key in pico.outputs()`
+	 *
+	 * If `pico_has_output` returns true, then it is safe to call
+	 * `pico_read_output` with the same key.
+	 */
 	bool has;
     PyObject *pOutputsResult, *pContainsResult, *pOutput ;
     Py_Check(pOutputsResult = PyObject_CallMethod(pPico,"outputs",NULL));
-    Py_Check(pOutput = PyString_FromString(output));
+    Py_Check(pOutput = PyString_FromString(key));
     Py_Check(pContainsResult = PyObject_CallMethod(pOutputsResult, "__contains__", "(O)", pOutput));
     has = (pContainsResult == Py_True);
     Py_DECREF(pOutputsResult); Py_DECREF(pContainsResult); Py_DECREF(pOutput);
@@ -71,24 +139,55 @@ bool pico_has_output(PyObject *pPico, char* output){
 }
 
 
-double* pico_read_result(PyObject *pResult, char *which, int len){
+void pico_free_result(PyObject *pResult){
+	/**
+	 * Free the memory used by a given result.
+	 */
+	Py_XDECREF(pResult);
+}
+
+
+void pico_read_output(PyObject *pResult, char *key, double** result, int* nresult){
+	/**
+	 * Read an output from a computed PICO result.
+	 *
+	 * In Python, a PICO "result" is the return value of `PICO.get()`
+	 * which is a dictionary (mapping output names to arrays).
+	 *
+	 * This C function corresponds to getting values from that dictionary.
+	 *
+	 * Parameters:
+	 * -----------
+	 *
+	 * pResult : *PyObject
+	 * 		The `pResult` object as returned by `pico_compute_result`
+	 * key : *char
+	 *      The name of the desired output.
+	 * result : **double
+	 * 		A pointer to a double[] which will hold the result. If the double[] array
+	 * 		is NULL, it will be allocated and the pointer returned. In either case,
+	 * 		it is up to the user to free the memory.
+	 * nresult : *int
+	 * 		How many values to write to `result`. Set to -1 to write all values.
+	 * 		The return value is how many values were actually written.
+	 */
+
+	if (pResult==NULL){
+		printf("Tried to get PICO output without computing result first.");
+		exit(1);
+	}
+
 	PyArrayObject *pArr;
-	double* res;
-	pArr = (PyArrayObject*)PyDict_GetItemString(pResult,which);
+	pArr = (PyArrayObject*)PyDict_GetItemString(pResult,key);
 	if (pArr==NULL){
 		if (PyErr_Occurred()) PyErr_Print();
-		printf("PICO not trained on %s",which);
-		return NULL;
+		printf("PICO couldn't compute the output '%s'\n",key);
+		exit(1);
 	}
 	else{
-		if (len > PyArray_DIMS(pArr)[0]){
-			printf("Asking for higher length (e.g. lmax, kmax) than PICO has calculated.\n");
-			exit(1);
-		}
-		else{
-			res = (double*) PyArray_GETPTR1(pArr,0);
-			return res;
-		}
+		if ((*nresult)<0 || (*nresult)>PyArray_DIMS(pArr)[0]) (*nresult) = PyArray_DIMS(pArr)[0];
+		if ((*result)==NULL) (*result) = malloc(sizeof(double)*(*nresult));
+		memcpy(*result, (double*) PyArray_GETPTR1(pArr,0),sizeof(double)*(*nresult));
 	}
 
 }
