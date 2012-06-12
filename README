@@ -97,7 +97,7 @@ CosmoMC Plugin
 
 To install the CosmoMC plugin, do the following:
 
-* Copy ``plugins/cosmomc/CMB_Cls_picaso.f90`` and ``plugins/camb/pico_camb.f90`` 
+* Copy ``plugins/cosmomc/CMB_Cls_pico.f90`` and ``plugins/camb/pico_camb.f90`` 
   to the CosmoMC source folder
 * Replace ``driver.f90`` in the CosmoMC source folder with the one in ``plugins/cosmomc``
 * In your CosmoMC Makefile, replace references to ``CMB_Cls_simple`` 

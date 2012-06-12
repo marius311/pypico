@@ -25,6 +25,7 @@ def get_include():
 def get_link():
     """Get link flags needed for linking C/Fortran code with the PICO library."""
     return '-L%s -lpico '%os.path.dirname(os.path.abspath(__file__)) + \
+            '-L%s/lib '%subprocess.check_output(['python-config','--prefix']).strip() + \
             subprocess.check_output(['python-config','--libs']).strip()
 
 
