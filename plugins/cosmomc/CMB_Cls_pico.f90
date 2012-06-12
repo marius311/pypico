@@ -13,7 +13,7 @@ module CMB_Cls
   use bao
   use HST
   use IO
-  use fpico
+  use pico_camb
   implicit none
   logical :: Use_SN =.false. !Compute Supernovae likelihoods only when background changes
   logical :: Use_HST =.false. !Compute HST likelihoods only when background changes
