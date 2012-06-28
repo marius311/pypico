@@ -28,7 +28,7 @@ def get_link():
                      '-L%s/lib'%PREFIX.strip()] +
                     get_config_var('LIBS').split() +
                     get_config_var('SYSLIBS').split() + 
-                    ['-lpython' + get_config_var('VERSION') + (sys.pydebug and "_d" or "")])
+                    ['-lpython' + get_config_var('VERSION')])
 
 
 class PICO():

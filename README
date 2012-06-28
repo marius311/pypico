@@ -7,18 +7,20 @@ Installation
 
 To install *PICO*, download and extract the package, and from the top folder run::
 
+    python setup.py build
     python setup.py install
 
 
 Install notes
 -------------
 * If you don't have root access, you can append the option ``--user`` 
-  which installs *PICO* under your home directory instead of system wide.
+  to the install command to install *PICO* under your home directory 
+  instead of system wide.
 * For linking against languages other than Python, *PICO* uses 
   `F2PY <http://www.scipy.org/F2py>`_ to compile the *PICO* library.
   It will try to automatically find C and Fortran compilers installed
   on your system. If this doesn't work, you can give a compiler name by running
-  ``python setup.py install`` with the ``--fcompiler=`` and ``--compiler=`` flags.
+  ``python setup.py build`` with the ``--fcompiler=`` and ``--compiler=`` flags.
   You can list valid compiler names with ``--help-fcompiler`` and ``--help-compiler``. 
   You can also directly specify the path to the Fortran compiler with ``--f90exec=``. 
 * If you're familiar with installing Python packages, note that ``easy_install pypico`` 
