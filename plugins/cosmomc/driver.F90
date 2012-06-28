@@ -17,7 +17,6 @@ program SolveCosmology
         use MatrixUtils
         use IO
         use ParamNames
-        use fpico
 #ifdef WMAP_PARAMS
         use WMAP_OPTIONS
 #endif

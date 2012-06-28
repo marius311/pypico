@@ -5,8 +5,8 @@ Author: Marius Millea
 
 _version = '3.1.0'
 
-import cPickle, imp, os, sys, numpy, subprocess, hashlib, time
-
+import cPickle, imp, os, sys, numpy, hashlib, time
+from distutils.sysconfig import get_config_var, PREFIX, get_python_inc
 
 """ Loaded datafiles will residue in this empty module. """
 sys.modules['pypico.datafiles']=imp.new_module('pypico.datafiles')
@@ -17,16 +17,18 @@ def get_folder():
 
 def get_include():
     """Get include flags needed for compiling C/Fortran code with the PICO library."""
-    return subprocess.check_output(['python-config','--includes']).strip() + \
-            ' -I%s'%numpy.get_include() + \
-            ' -I%s'%os.path.dirname(os.path.abspath(__file__))
-
+    return ' '.join(['-I' + get_python_inc(),
+                     '-I' + get_python_inc(plat_specific=True),
+                     '-I%s'%numpy.get_include(),
+                     '-I%s'%os.path.dirname(os.path.abspath(__file__))])
 
 def get_link():
     """Get link flags needed for linking C/Fortran code with the PICO library."""
-    return '-L%s -lpico '%os.path.dirname(os.path.abspath(__file__)) + \
-            '-L%s/lib '%subprocess.check_output(['python-config','--prefix']).strip() + \
-            subprocess.check_output(['python-config','--libs']).strip()
+    return ' '.join(['-L%s -lpico '%os.path.dirname(os.path.abspath(__file__)),
+                     '-L%s/lib'%PREFIX.strip()] +
+                    get_config_var('LIBS').split() +
+                    get_config_var('SYSLIBS').split() + 
+                    ['-lpython' + get_config_var('VERSION') + (sys.pydebug and "_d" or "")])
 
 
 class PICO():
