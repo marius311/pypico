@@ -146,6 +146,38 @@ void pico_free_result(PyObject *pResult){
 	Py_XDECREF(pResult);
 }
 
+void pico_get_output_len(PyObject *pResult, char *key, int *nresult){
+	/**
+	 * Gets the maximum length of the array returned by the corresponding
+	 * call to `pico_read_output`
+	 *
+	 * Parameters
+	 * ----------
+	 * pResult : PyObject*
+	 * 		The `pResult` object as returned by `pico_compute_result`
+	 * key : char*
+	 *      The name of the desired output.
+	 * nresult : int*
+	 * 		The returned length
+	 *
+	 */
+	if (pResult==NULL){
+		printf("Tried to get PICO output without computing result first.");
+		exit(1);
+	}
+
+	PyArrayObject *pArr;
+	pArr = (PyArrayObject*)PyDict_GetItemString(pResult,key);
+	if (pArr==NULL){
+		if (PyErr_Occurred()) PyErr_Print();
+		printf("PICO couldn't compute the output '%s'\n",key);
+		exit(1);
+	}
+	else{
+		(*nresult) = PyArray_DIMS(pArr)[0];
+	}
+
+}
 
 void pico_read_output(PyObject *pResult, char *key, double** result, int* nresult){
 	/**
@@ -159,15 +191,15 @@ void pico_read_output(PyObject *pResult, char *key, double** result, int* nresul
 	 * Parameters:
 	 * -----------
 	 *
-	 * pResult : *PyObject
+	 * pResult : PyObject*
 	 * 		The `pResult` object as returned by `pico_compute_result`
-	 * key : *char
+	 * key : char*
 	 *      The name of the desired output.
-	 * result : **double
+	 * result : double**
 	 * 		A pointer to a double[] which will hold the result. If the double[] array
 	 * 		is NULL, it will be allocated and the pointer returned. In either case,
 	 * 		it is up to the user to free the memory.
-	 * nresult : *int
+	 * nresult : int*
 	 * 		How many values to write to `result`. Set to -1 to write all values.
 	 * 		The return value is how many values were actually written.
 	 */

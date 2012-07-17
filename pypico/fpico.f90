@@ -29,6 +29,11 @@ subroutine fpico_compute_result(success)
     if (present(success)) success=success_
 end subroutine
 
+subroutine fpico_get_output_len(key, nresult)
+    character(len=*) :: key
+    integer(4) :: nresult
+    call fpico_get_output_len_(key, len(key), nresult)
+end subroutine
 
 subroutine fpico_read_output(key, result, istart, iend)
     character(len=*) :: key

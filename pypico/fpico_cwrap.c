@@ -49,6 +49,13 @@ int fpico_has_output__(char *output, int *len){
 	return pico_has_output(pPico,_output) ? 1 : 0;
 }
 
+void fpico_get_output_len__(char *key, int *len, int *nresult){
+	check_computed();
+	char _key[*len+1]; memcpy(&_key,key,*len); _key[*len]=0;
+	pico_get_output_len(pResult,_key,nresult);
+}
+
+
 void fpico_read_output__(char *key, int *len, double result[], int *istart, int *iend){
 	check_computed();
 	char _key[*len+1]; memcpy(&_key,key,*len); _key[*len]=0;
