@@ -16,3 +16,7 @@ void pico_read_output(PyObject *pResult, char *key, double **result, int *nresul
 
 bool pico_has_output(PyObject *pPico, char* output);
 
+void pico_set_verbose(PyObject *pPico, bool verbose);
+
+bool pico_is_verbose(PyObject *pPico);
+

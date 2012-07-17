@@ -78,13 +78,37 @@ PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams){
     pResult = PyObject_Call(pGet,pArgs,pParams);
     Py_Check(pCant = PyObject_GetAttrString(get_pico_module(), "CantUsePICO"));
     if (pResult==NULL){
-    	if (PyErr_ExceptionMatches(pCant)) PyErr_Print();
+    	if (PyErr_ExceptionMatches(pCant)){
+    		if (pico_is_verbose(pPico)) PyErr_Print();
+    	}
     	else Py_Check(pResult);
     }
     Py_DECREF(pArgs); Py_DECREF(pCant);
     return pResult;
 }
 
+void pico_set_verbose(PyObject *pPico, bool verbose){
+	/**
+	 * Set whether to print out debug messages for calls
+	 * to a given PICO object.
+	 */
+	PyObject_SetAttrString(pPico, "_verbose",verbose ? Py_True : Py_False);
+}
+
+bool pico_is_verbose(PyObject *pPico){
+	/**
+	 * Check whether a given PICO object has the verbose flag.
+	 */
+	PyObject *pVerbose;
+	bool verbose;
+	verbose = false;
+	if (PyObject_HasAttrString(pPico,"_verbose")){
+		pVerbose = PyObject_GetAttrString(pPico, "_verbose");
+		verbose = PyBool_Check(pVerbose) && (pVerbose == Py_True);
+		Py_DECREF(pVerbose);
+	}
+	return verbose;
+}
 
 PyObject* pico_compute_result(PyObject *pPico, int ninputs, char *names[], double values[]){
 	/**

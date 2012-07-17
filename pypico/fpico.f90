@@ -20,7 +20,6 @@ subroutine fpico_set_param(name,value)
     call fpico_set_param_(name,len(name),value)
 end subroutine
 
-
 subroutine fpico_compute_result(success)
     use fpico
     logical :: success_
@@ -48,4 +47,5 @@ subroutine fpico_has_output(key,has_output)
     logical :: has_output
     has_output = (fpico_has_output_(key,len(key)) == 0)
 end subroutine
+
 

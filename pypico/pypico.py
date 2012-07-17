@@ -88,13 +88,23 @@ def _version_ok(version):
     return mine[:2]==theirs[:2] and mine[2]>=theirs[2]
 
 
-def load_pico(datafile, module=None, check_version=True):
+def load_pico(datafile, verbose=False, module=None, check_version=True):
     """
     Load a PICO data datafile and return a PICO object.
     
-    If module is not None, it can specify a path to a Python file, which will 
-    be used instead of the code contained in the datafile. This is generally 
-    used for debugging purposes only.
+    Parameters
+    ----------
+    
+    datafile : 
+        Path to the PICO datafile
+    verbose, optional : 
+        Whether to print debugging messages during calculation. (default: False)
+    check_version, optional : 
+        Can set to False to force PICO to use an old datafile. (default: False)
+    module, optional : 
+        If not None, it can specify a path to a Python file, which will 
+        used instead of the code contained in the datafile. This is generally 
+        used for debugging purposes only. (default: None)
     """
     
     try:
@@ -123,6 +133,7 @@ def load_pico(datafile, module=None, check_version=True):
     
     pico = cPickle.loads(data['pico'])
     pico._code = data['code']
+    pico._verbose = verbose
     return pico
 
     

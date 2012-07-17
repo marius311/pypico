@@ -55,6 +55,10 @@ void fpico_get_output_len__(char *key, int *len, int *nresult){
 	pico_get_output_len(pResult,_key,nresult);
 }
 
+void fpico_set_verbose_(bool verbose){
+	check_loaded();
+	pico_set_verbose(pPico,verbose);
+}
 
 void fpico_read_output__(char *key, int *len, double result[], int *istart, int *iend){
 	check_computed();
