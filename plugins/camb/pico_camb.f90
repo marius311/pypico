@@ -45,7 +45,7 @@ subroutine Pico_GetResults(P, error)
             allocate(Cl_tensor(lmin:P%Max_l_tensor,1,CT_Temp:CT_Cross))
             allocate(Cl_lensed(lmin:P%Max_l,1,CT_Temp:CT_Cross))
 
-            fac = P%tcmb**(-2)
+            fac = P%tcmb**(-2) * 1e-12
 
             if (P%WantScalars) then
                 call fpico_read_output("scalar_TT",Cl_scalar(:,1,C_Temp),lmin,P%Max_l)
