@@ -55,7 +55,7 @@ PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams){
 	 * This is equivalent to the Python command `pico.get(**inputs)`
 	 *
 	 * Specific arrays can can be read from the return object
-	 * by passing it pico_read_output.
+	 * with pico_read_output.
 	 *
 	 * Parameters:
 	 * -----------
