@@ -4,6 +4,12 @@ module fpico
         function fpico_compute_result_()
             logical :: fpico_compute_result_
         end function
+
+        function fpico_has_output_(key,nkey)
+            character(len=*) :: key
+            integer :: nkey
+            logical :: fpico_has_output_
+        end function
     end interface
 
 end module
@@ -43,9 +49,10 @@ end subroutine
 
 
 subroutine fpico_has_output(key,has_output)
+    use fpico
     character(len=*) :: key
-    logical :: has_output
-    has_output = (fpico_has_output_(key,len(key)) == 0)
+    logical, intent(out) :: has_output
+    has_output = fpico_has_output_(key,len(key))
 end subroutine
 
 
