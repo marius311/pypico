@@ -26,6 +26,12 @@ subroutine fpico_set_param(name,value)
     call fpico_set_param_(name,len(name),value)
 end subroutine
 
+subroutine fpico_request_output(name)
+    character(len=*) :: name
+    call fpico_request_output_(name,len(name))
+end subroutine
+
+
 subroutine fpico_compute_result(success)
     use fpico
     logical :: success_

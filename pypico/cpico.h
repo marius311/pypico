@@ -8,7 +8,7 @@ PyObject* pico_load(char *file);
 
 PyObject* pico_compute_result(PyObject *pPico, int nparams, char *names[], double values[]);
 
-PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams);
+PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams, PyObject *pOutputs);
 
 void pico_get_output_len(PyObject *pResult, char *key, int *nresult);
 

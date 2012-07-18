@@ -2,13 +2,14 @@
 #include "cpico.h"
 #include <stdbool.h>
 
-PyObject *pPico, *pResult, *pParams, *pCantUsePICO;
+PyObject *pPico, *pResult, *pParams, *pOutputs, *pCantUsePICO;
 
 void fpico_load__(char *file, int *len){
 	Py_XDECREF(pPico); Py_XDECREF(pParams);
 	char _file[*len+1]; memcpy(&_file,file,*len); _file[*len]=0;
 	Py_Check(pPico = pico_load(_file));
-    Py_Check(pParams = PyDict_New());
+    fpico_reset_params_();
+    fpico_reset_requested_outputs_();
 }
 
 void check_loaded(void){
@@ -26,6 +27,22 @@ void check_computed(void){
 	}
 }
 
+void fpico_reset_params_(){
+    Py_Check(pParams = PyDict_New());
+}
+
+void fpico_reset_requested_outputs_(){
+    Py_Check(pOutputs = PySet_New(NULL));
+}
+
+void fpico_request_output__(char *name, int *len){
+	check_loaded();
+	PyObject *pName;
+	char _name[*len+1]; memcpy(&_name,name,*len); _name[*len]=0;
+	Py_Check(pName = PyString_FromString(_name));
+	PySet_Add(pOutputs,pName);
+}
+
 void fpico_set_param__(char *name, int *len, double *value){
 	check_loaded();
     PyObject *pName, *pValue;
@@ -39,7 +56,7 @@ void fpico_set_param__(char *name, int *len, double *value){
 bool fpico_compute_result__(void){
 	check_loaded();
 	Py_XDECREF(pResult);
-	pResult = pico_compute_result_dict(pPico, pParams);
+	pResult = pico_compute_result_dict(pPico, pParams,pOutputs);
 	return pResult!=NULL;
 }
 
@@ -55,9 +72,9 @@ void fpico_get_output_len__(char *key, int *len, int *nresult){
 	pico_get_output_len(pResult,_key,nresult);
 }
 
-void fpico_set_verbose_(bool verbose){
+void fpico_set_verbose_(bool *verbose){
 	check_loaded();
-	pico_set_verbose(pPico,verbose);
+	pico_set_verbose(pPico,*verbose);
 }
 
 void fpico_read_output__(char *key, int *len, double result[], int *istart, int *iend){

@@ -17,6 +17,7 @@ program SolveCosmology
         use MatrixUtils
         use IO
         use ParamNames
+        use pico_camb
 #ifdef WMAP_PARAMS
         use WMAP_OPTIONS
 #endif
@@ -88,6 +89,7 @@ program SolveCosmology
         call TNameValueList_Init(CustomParams%ReadValues)
 
         call fpico_load(trim(Ini_Read_String("pico_datafile")))
+        call fpico_set_verbose(Ini_Read_Logical("pico_verbose",.false.))
 
         if (Ini_HasKey('local_dir')) LocalDir=ReadIniFileName(DefIni,'local_dir') 
         if (Ini_HasKey('data_dir')) DataDir=ReadIniFileName(DefIni,'data_dir') 

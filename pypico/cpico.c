@@ -48,7 +48,7 @@ PyObject* pico_load(char *file){
     return pPico;
 }
 
-PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams){
+PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams, PyObject *pOutputs){
 	/**
 	 * Compute the outputs given some inputs.
 	 *
@@ -64,15 +64,28 @@ PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams){
 	 * 		The PICO object as loaded by `pico_load`
 	 * pParams : *PyObject
 	 * 		A Python dictionary object contains name-value input pairs.
-	 *
+	 * pParams : *PyObject
+	 * 		A Python iterable which contains the desired outputs.
 	 */
 
 	if (pPico==NULL){
 		printf("Tried to call PICO without loading a datafile first.\n");
 		exit(1);
 	}
+	if (pico_is_verbose(pPico)){
+		printf("Calling PICO on:\n");
+		PyObject_Print(pParams,stdout,0);
+		printf("\n");
+		if (pOutputs==NULL) printf("for all outputs.\n");
+		else{
+			printf("for outputs:.\n");
+			PyObject_Print(pOutputs, stdout, 0);
+		}
+		printf("\n");
+	}
 
     PyObject *pArgs, *pResult, *pGet, *pCant;
+    if (pOutputs!=NULL) PyDict_SetItemString(pParams,"outputs",pOutputs);
     Py_Check(pArgs = PyTuple_New(0));
     Py_Check(pGet = PyObject_GetAttrString(pPico, "get"));
     pResult = PyObject_Call(pGet,pArgs,pParams);
@@ -140,7 +153,7 @@ PyObject* pico_compute_result(PyObject *pPico, int ninputs, char *names[], doubl
 		PyDict_SetItem(pParams,pName,pValue);
 		Py_DECREF(pName); Py_DECREF(pValue);
     }
-    return pico_compute_result_dict(pPico,pParams);
+    return pico_compute_result_dict(pPico,pParams,NULL);
 }
 
 bool pico_has_output(PyObject *pPico, char* key){

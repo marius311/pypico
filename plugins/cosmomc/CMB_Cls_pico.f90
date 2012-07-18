@@ -13,6 +13,8 @@ module CMB_Cls
   use bao
   use HST
   use IO
+  use pico_camb
+  use modeldata, only : CTransScal, CTransVec, CTransTens
   implicit none
   logical :: Use_SN =.false. !Compute Supernovae likelihoods only when background changes
   logical :: Use_HST =.false. !Compute HST likelihoods only when background changes
@@ -71,6 +73,31 @@ contains
               
  end function RecomputeTransfers
 
+    subroutine PICO_GetTransfers(Params, OutData, error)
+    use CAMBmain
+    use lensing
+    type(CAMBparams) :: Params
+    type (CAMBdata)  :: OutData
+    integer :: error !Zero if OK
+
+    !Set internal types from OutData so it always 'owns' the memory, prevent leaks
+
+    MT =  OutData%MTrans
+
+    CTransScal = OutData%ClTransScal
+    CTransVec  = OutData%ClTransVec
+    CTransTens = OutData%ClTransTens
+
+
+    call PICO_GetResults(Params, error)
+    OutData%Params = Params
+    OutData%MTrans = MT
+    OutData%ClTransScal = CTransScal
+    OutData%ClTransVec  = CTransVec
+    OutData%ClTransTens = CTransTens
+
+    end subroutine PICO_GetTransfers
+
 
  subroutine GetCls(CMB,Info, Cls, error)
    use ModelParams, only : ThreadNum
@@ -97,12 +124,11 @@ contains
      !Slow parameters have changed
          call CAMB_InitCAMBdata(Info%Transfers)
          call CMBToCAMB(CMB, P) 
-         call SetCAMBInitPower(P,CMB,1)
       
          if (Feedback > 1) write (*,*) 'Calling PICO'
          Threadnum =num_threads
   
-         call PICO_GetResults(P, error)
+         call PICO_GetTransfers(P, Info%Transfers, error)
 
          NewTransfers = .true.
          Info%LastParams = CMB
@@ -142,14 +168,15 @@ contains
       !Always get everything again. Slight waste of time in general, but allows complete mixing of fast
       !parameters, and works with lensing
 
-!
-!         call CAMB_TransfersToPowers(Info%Transfers)
-!            !this sets slow CAMB params correctly from value stored in Transfers
-!         if (global_error_flag/=0) then
-!          error=global_error_flag
-!          return
-!         end if
-
+         call SetCAMBInitPower(Info%Transfers%Params,CMB,1)      
+      
+         call CAMB_TransfersToPowers(Info%Transfers)
+            !this sets slow CAMB params correctly from value stored in Transfers
+         if (global_error_flag/=0) then
+          error=global_error_flag
+          return
+         end if 
+           
          call SetTheoryFromCAMB(Info%Theory)
     
          if (any(Info%Theory%cl(:,1) < 0 )) then
@@ -159,30 +186,10 @@ contains
          end if
    
          if (Use_LSS) then
-            Info%Theory%sigma_8 = Info%Transfers%MTrans%sigma_8(matter_power_lnzsteps,1)
+            Info%Theory%sigma_8 = MT%sigma_8(1,1)
+            Info%Transfers%MTrans = MT
 #ifdef DR71RG 
-            !! BR09 get lrgtheory info
-            if (num_matter_power /= 0 .and. use_dr7lrg) then
-                do zix = 1,matter_power_lnzsteps
-                 if(zix .eq. iz0lrg .or. zix .eq. izNEARlrg .or. zix .eq. izMIDlrg .or. zix .eq. izFARlrg) then
-                   call Transfer_GetMatterPowerAndNW(Info%Transfers%MTrans,&
-                     Info%Theory%matter_power(:,zix),matter_power_lnzsteps-zix+1,&
-                      1,matter_power_minkh, matter_power_dlnkh,num_matter_power,&
-                       kmindata,getabstransferscale, &
-                       Info%Theory%mpk_nw(:,zix),Info%Theory%mpkrat_nw_nl(:,zix))
-                     if(zix == iz0lrg) powerscaletoz0(1) = getabstransferscale**2.0d0
-                     if(zix == izNEARlrg)   powerscaletoz0(2) = powerscaletoz0(1)/getabstransferscale**2.0d0
-                     if(zix == izMIDlrg)   powerscaletoz0(3) = powerscaletoz0(1)/getabstransferscale**2.0d0
-                     if(zix == izFARlrg)   powerscaletoz0(4) = powerscaletoz0(1)/getabstransferscale**2.0d0
-                  else  !! not an LRG redshift, so call regular function.
-                   call Transfer_GetMatterPower(Info%Transfers%MTrans,&
-                     Info%Theory%matter_power(:,zix),matter_power_lnzsteps-zix+1,&
-                     1,matter_power_minkh, matter_power_dlnkh,num_matter_power)
-                  end if
-                 end do
-                 if(zix == iz0lrg) powerscaletoz0(1) = 1.0d0
-             else if (num_matter_power /= 0) then
-            !! end BR09 get lrgtheory info
+#error Can't use DR71RG and PICO
 #else
             if (num_matter_power /= 0) then
 #endif
@@ -201,6 +208,8 @@ contains
 
      call ClsFromTheoryData(Info%Theory, CMB, Cls)
      
+     print *, cls(:10,1)
+
  end subroutine GetCls
 
  subroutine SetTheoryFromCAMB(Theory)
@@ -475,7 +484,7 @@ contains
         P%InitPower%nn = 1
         P%AccuratePolarization = num_cls/=1 
         P%Reion%use_optical_depth = .true.
-        P%OnlyTransfers = .false.
+        P%OnlyTransfers = .true.
 
         if (use_BAO) P%want_zdrag = .true. !JH
         P%want_zstar = .false. !set to true if you want CAMB to calculate exact z_star
