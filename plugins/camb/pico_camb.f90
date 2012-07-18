@@ -1,10 +1,14 @@
 module pico_camb
 
-    use CAMBmain
-    use ModelParams
-    use ModelData
-    use CAMB
-    use InitialPower
+
+    use CAMBmain, only : InitVars
+    use ModelParams, only : CAMBparams, CAMBParams_Set, CosmomcTheta, lmin
+    use ModelData, only : cl_scalar, cl_lensed, cl_tensor
+    use Transfer, only : MT, transfer_tot, transfer_kh, transfer_allocate, transfer_get_sigma8
+    use CAMB, only : w_lam, CAMB_GetResults, C_Temp, C_E, C_last, C_Cross, CT_E, CT_B, CT_Temp, CT_Cross, CT_B
+    use InitialPower, only : InitializePowers
+
+    implicit none
 
 contains
 

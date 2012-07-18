@@ -58,9 +58,13 @@ contains
      w_lam = -1
     end if
     if (CMB%nnu < 3.04) call MpiStop('CMBToCAMB: nnu < 3.04, would give negative masless neutrinos')
-    P%Num_Nu_Massless = CMB%nnu - 3 !AL Sept 11 for CAMB's new treatment; previously 3.046; we assume three massive
+    P%Num_Nu_Massive = CMB%nnu
+    P%Num_Nu_Massless = 0
     P%YHe = CMB%YHe
-       
+!    P%initpower%ScalarPowerAmp(1) = 10.**(-10) * CMB%norm(1)
+!    P%initpower%an(1) = CMB%initpower(1)
+
+
   end subroutine CMBToCAMB
 
  function RecomputeTransfers (A, B)
@@ -78,23 +82,10 @@ contains
     use lensing
     type(CAMBparams) :: Params
     type (CAMBdata)  :: OutData
-    integer :: error !Zero if OK
+    integer :: error !Zero if O
 
     !Set internal types from OutData so it always 'owns' the memory, prevent leaks
 
-    MT =  OutData%MTrans
-
-    CTransScal = OutData%ClTransScal
-    CTransVec  = OutData%ClTransVec
-    CTransTens = OutData%ClTransTens
-
-
-    call PICO_GetResults(Params, error)
-    OutData%Params = Params
-    OutData%MTrans = MT
-    OutData%ClTransScal = CTransScal
-    OutData%ClTransVec  = CTransVec
-    OutData%ClTransTens = CTransTens
 
     end subroutine PICO_GetTransfers
 
@@ -112,7 +103,7 @@ contains
    Type(ParamSetInfo) Info
    real Cls(lmax,1:num_cls_tot)
    type(CAMBParams)  P
-   logical NewTransfers
+   logical NewTransfers, used_pico
    integer zix
    character(LEN=128) :: LogLine
   
@@ -124,11 +115,28 @@ contains
      !Slow parameters have changed
          call CAMB_InitCAMBdata(Info%Transfers)
          call CMBToCAMB(CMB, P) 
+         call SetCAMBInitPower(P,CMB,1)
       
-         if (Feedback > 1) write (*,*) 'Calling PICO'
+         if (Feedback > 1) write (*,*) 'Getting Cls'
          Threadnum =num_threads
   
-         call PICO_GetTransfers(P, Info%Transfers, error)
+         MT =  Info%Transfers%MTrans
+         CTransScal = Info%Transfers%ClTransScal
+         CTransVec  = Info%Transfers%ClTransVec
+         CTransTens = Info%Transfers%ClTransTens
+         call PICO_GetResults(P, error, used_pico)
+         if (Feedback>1) then
+            if (used_pico) then
+                write (*,*) 'Used PICO'
+            else
+                write (*,*) 'Used CAMB'
+            end if
+         end if
+         Info%Transfers%Params = P
+         Info%Transfers%MTrans = MT
+         Info%Transfers%ClTransScal = CTransScal
+         Info%Transfers%ClTransVec  = CTransVec
+         Info%Transfers%ClTransTens = CTransTens
 
          NewTransfers = .true.
          Info%LastParams = CMB
@@ -158,7 +166,6 @@ contains
           write (logLine,*) 'CAMB called ',ncalls, ' times; ', nerrors,' errors'
           call IO_WriteLog(logfile_unit,logLine)
          end if 
-         if (Feedback > 1) write (*,*) 'CAMB done'
 
     end if 
     
@@ -168,14 +175,15 @@ contains
       !Always get everything again. Slight waste of time in general, but allows complete mixing of fast
       !parameters, and works with lensing
 
-         call SetCAMBInitPower(Info%Transfers%Params,CMB,1)      
-      
+        if (.not. used_pico) then
+         call SetCAMBInitPower(Info%Transfers%Params,CMB,1)
          call CAMB_TransfersToPowers(Info%Transfers)
             !this sets slow CAMB params correctly from value stored in Transfers
          if (global_error_flag/=0) then
           error=global_error_flag
           return
-         end if 
+         end if
+        end if
            
          call SetTheoryFromCAMB(Info%Theory)
     
@@ -189,7 +197,28 @@ contains
             Info%Theory%sigma_8 = MT%sigma_8(1,1)
             Info%Transfers%MTrans = MT
 #ifdef DR71RG 
-#error Can't use DR71RG and PICO
+            !! BR09 get lrgtheory info
+            if (num_matter_power /= 0 .and. use_dr7lrg) then
+                do zix = 1,matter_power_lnzsteps
+                 if(zix .eq. iz0lrg .or. zix .eq. izNEARlrg .or. zix .eq. izMIDlrg .or. zix .eq. izFARlrg) then
+                   call Transfer_GetMatterPowerAndNW(Info%Transfers%MTrans,&
+                     Info%Theory%matter_power(:,zix),matter_power_lnzsteps-zix+1,&
+                      1,matter_power_minkh, matter_power_dlnkh,num_matter_power,&
+                       kmindata,getabstransferscale, &
+                       Info%Theory%mpk_nw(:,zix),Info%Theory%mpkrat_nw_nl(:,zix))
+                     if(zix == iz0lrg) powerscaletoz0(1) = getabstransferscale**2.0d0
+                     if(zix == izNEARlrg)   powerscaletoz0(2) = powerscaletoz0(1)/getabstransferscale**2.0d0
+                     if(zix == izMIDlrg)   powerscaletoz0(3) = powerscaletoz0(1)/getabstransferscale**2.0d0
+                     if(zix == izFARlrg)   powerscaletoz0(4) = powerscaletoz0(1)/getabstransferscale**2.0d0
+                  else  !! not an LRG redshift, so call regular function.
+                   call Transfer_GetMatterPower(Info%Transfers%MTrans,&
+                     Info%Theory%matter_power(:,zix),matter_power_lnzsteps-zix+1,&
+                     1,matter_power_minkh, matter_power_dlnkh,num_matter_power)
+                  end if
+                 end do
+                 if(zix == iz0lrg) powerscaletoz0(1) = 1.0d0
+             else if (num_matter_power /= 0) then
+            !! end BR09 get lrgtheory info
 #else
             if (num_matter_power /= 0) then
 #endif
@@ -208,8 +237,6 @@ contains
 
      call ClsFromTheoryData(Info%Theory, CMB, Cls)
      
-     print *, cls(:10,1)
-
  end subroutine GetCls
 
  subroutine SetTheoryFromCAMB(Theory)

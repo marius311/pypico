@@ -1,10 +1,6 @@
 module fpico
 
     interface
-        function fpico_compute_result_()
-            logical :: fpico_compute_result_
-        end function
-
         function fpico_has_output_(key,nkey)
             character(len=*) :: key
             integer :: nkey
@@ -36,7 +32,7 @@ subroutine fpico_compute_result(success)
     use fpico
     logical :: success_
     logical, optional :: success
-    success_ = fpico_compute_result_()
+    call fpico_compute_result_(success_)
     if (present(success)) success=success_
 end subroutine
 
