@@ -45,7 +45,7 @@ end subroutine
 subroutine fpico_read_output(key, result, istart, iend)
     character(len=*) :: key
     real(8), dimension(istart:iend) :: result
-    integer :: istart, iend
+    integer(4) :: istart, iend
     call fpico_read_output_(key, len(key), result, istart, iend)
 end subroutine
 

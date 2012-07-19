@@ -28,11 +28,13 @@ void check_computed(void){
 }
 
 void fpico_reset_params_(){
+	Py_XDECREF(pParams);
     Py_Check(pParams = PyDict_New());
 }
 
 void fpico_reset_requested_outputs_(){
-    Py_Check(pOutputs = PySet_New(NULL));
+	Py_XDECREF(pOutputs);
+	pOutputs = Py_None;
 }
 
 void fpico_request_output__(char *name, int *len){
@@ -40,7 +42,9 @@ void fpico_request_output__(char *name, int *len){
 	PyObject *pName;
 	char _name[*len+1]; memcpy(&_name,name,*len); _name[*len]=0;
 	Py_Check(pName = PyString_FromString(_name));
+	if (pOutputs == Py_None) Py_Check(pOutputs = PySet_New(NULL));
 	PySet_Add(pOutputs,pName);
+	Py_DECREF(pName);
 }
 
 void fpico_set_param__(char *name, int *len, double *value){
@@ -58,6 +62,11 @@ void fpico_compute_result__(bool *success){
 	Py_XDECREF(pResult);
 	pResult = pico_compute_result_dict(pPico, pParams,pOutputs);
 	(*success) = pResult!=NULL;
+	if (pResult!=NULL && pico_is_verbose(pPico)){
+		printf("Result: ");
+		PyObject_Print(pResult,stdout,0);
+		printf("\n");
+	}
 }
 
 int fpico_has_output__(char *output, int *len){
@@ -80,8 +89,5 @@ void fpico_set_verbose_(bool *verbose){
 void fpico_read_output__(char *key, int *len, double result[], int *istart, int *iend){
 	check_computed();
 	char _key[*len+1]; memcpy(&_key,key,*len); _key[*len]=0;
-	double *_result=NULL; int nresult=-1;
-
-	pico_read_output(pResult,_key,&_result,&nresult);
-	memcpy(result,&_result[*istart],sizeof(double)*(*iend - *istart + 1));
+	pico_read_output(pResult,_key,&result,istart,iend);
 }

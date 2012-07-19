@@ -115,7 +115,7 @@ contains
 
             if (P%WantTransfer) then
                 call fpico_get_output_len("k",n_q_trans)
-
+                n_q_trans = n_q_trans-1
                 call InitializePowers(p%initpower,p%omegak)
 
                 MT%num_q_trans = n_q_trans
@@ -123,11 +123,12 @@ contains
 
                 allocate(tmp_trans(n_q_trans))
 
-                call fpico_read_output("k",tmp_trans,0,n_q_trans)
+                call fpico_read_output("k",tmp_trans,0,n_q_trans-1)
                 MT%q_trans = tmp_trans
                 MT%TransferData(Transfer_kh,:,1) = tmp_trans
-                call fpico_read_output("pk",tmp_trans,0,n_q_trans)
+                call fpico_read_output("pk",tmp_trans,0,n_q_trans-1)
                 MT%TransferData(Transfer_tot,:,1) = tmp_trans
+                deallocate(tmp_trans)
 
                 call Transfer_Get_sigma8(MT,8._8)
             end if

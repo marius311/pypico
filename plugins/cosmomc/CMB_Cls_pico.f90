@@ -77,18 +77,6 @@ contains
               
  end function RecomputeTransfers
 
-    subroutine PICO_GetTransfers(Params, OutData, error)
-    use CAMBmain
-    use lensing
-    type(CAMBparams) :: Params
-    type (CAMBdata)  :: OutData
-    integer :: error !Zero if O
-
-    !Set internal types from OutData so it always 'owns' the memory, prevent leaks
-
-
-    end subroutine PICO_GetTransfers
-
 
  subroutine GetCls(CMB,Info, Cls, error)
    use ModelParams, only : ThreadNum
@@ -190,12 +178,13 @@ contains
          if (any(Info%Theory%cl(:,1) < 0 )) then
             error = 1
             !Kill initial power spectra that go negative
+            print *, "neg cl"
             return
          end if
    
          if (Use_LSS) then
             Info%Theory%sigma_8 = MT%sigma_8(1,1)
-            Info%Transfers%MTrans = MT
+!            Info%Transfers%MTrans = MT
 #ifdef DR71RG 
             !! BR09 get lrgtheory info
             if (num_matter_power /= 0 .and. use_dr7lrg) then

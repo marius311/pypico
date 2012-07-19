@@ -73,12 +73,12 @@ PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams, PyObject 
 		exit(1);
 	}
 	if (pico_is_verbose(pPico)){
-		printf("Calling PICO on:\n");
+		printf("Calling PICO on: ");
 		PyObject_Print(pParams,stdout,0);
 		printf("\n");
-		if (pOutputs==NULL) printf("for all outputs.\n");
+		if (pOutputs==NULL) printf("for all outputs.");
 		else{
-			printf("for outputs:.\n");
+			printf("for outputs: ");
 			PyObject_Print(pOutputs, stdout, 0);
 		}
 		printf("\n");
@@ -96,7 +96,16 @@ PyObject* pico_compute_result_dict(PyObject *pPico, PyObject *pParams, PyObject 
     	}
     	else Py_Check(pResult);
     }
+    else{
+		if (pico_is_verbose(pPico)){
+			printf("Result: ");
+			PyObject_Print(pResult,stdout,0);
+			printf("\n");
+		}
+    }
     Py_DECREF(pArgs); Py_DECREF(pCant);
+
+
     return pResult;
 }
 
@@ -216,7 +225,7 @@ void pico_get_output_len(PyObject *pResult, char *key, int *nresult){
 
 }
 
-void pico_read_output(PyObject *pResult, char *key, double** result, int* nresult){
+void pico_read_output(PyObject *pResult, char *key, double** result, int* istart, int* iend){
 	/**
 	 * Read an output from a computed PICO result.
 	 *
@@ -254,9 +263,11 @@ void pico_read_output(PyObject *pResult, char *key, double** result, int* nresul
 		exit(1);
 	}
 	else{
-		if ((*nresult)<0 || (*nresult)>PyArray_DIMS(pArr)[0]) (*nresult) = PyArray_DIMS(pArr)[0];
-		if ((*result)==NULL) (*result) = malloc(sizeof(double)*(*nresult));
-		memcpy(*result, (double*) PyArray_GETPTR1(pArr,0),sizeof(double)*(*nresult));
+		if ((*iend)<0 || (*iend)>PyArray_DIMS(pArr)[0]) (*iend) = PyArray_DIMS(pArr)[0];
+		if (*istart<0) (*istart)=0;
+		int nresult = *iend - *istart + 1;
+		if ((*result)==NULL) (*result) = malloc(sizeof(double)*(nresult));
+		memcpy(*result, (double*)PyArray_GETPTR1(pArr,0)+(*istart), sizeof(double)*(nresult));
 	}
 
 }
