@@ -57,11 +57,11 @@ void fpico_set_param__(char *name, int *len, double *value){
 	Py_DECREF(pName); Py_DECREF(pValue);
 }
 
-void fpico_compute_result__(bool *success){
+void fpico_compute_result__(int *success){
 	check_loaded();
 	Py_XDECREF(pResult);
 	pResult = pico_compute_result_dict(pPico, pParams,pOutputs);
-	(*success) = pResult!=NULL;
+	(*success) = pResult==NULL ? (int)0 : (int)1;
 	if (pResult!=NULL && pico_is_verbose(pPico)){
 		printf("Result: ");
 		PyObject_Print(pResult,stdout,0);
