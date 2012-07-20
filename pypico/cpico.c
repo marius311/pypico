@@ -263,8 +263,16 @@ void pico_read_output(PyObject *pResult, char *key, double** result, int* istart
 		exit(1);
 	}
 	else{
+        //printf("istart=%d\n",*istart);
+        PyObject_Print(pArr,stdout,0);
+        printf("dims: %ld",PyArray_DIMS(pArr)[0]);
 		if ((*iend)<0 || (*iend)>PyArray_DIMS(pArr)[0]) (*iend) = PyArray_DIMS(pArr)[0];
-		if (*istart<0) (*istart)=0;
+        //printf("iend=%d\n",*iend);
+        //printf("istart<0=%d\n",(*istart)<0);
+		if ((*istart)<0) {
+            //printf("istart=%d\n",*istart);
+            (*istart)=0;
+        }
 		int nresult = *iend - *istart + 1;
 		if ((*result)==NULL) (*result) = malloc(sizeof(double)*(nresult));
 		memcpy(*result, (double*)PyArray_GETPTR1(pArr,0)+(*istart), sizeof(double)*(nresult));

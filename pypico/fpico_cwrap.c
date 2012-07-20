@@ -1,15 +1,24 @@
 #include <Python.h>
 #include "cpico.h"
-#include <stdbool.h>
 
 PyObject *pPico, *pResult, *pParams, *pOutputs, *pCantUsePICO;
 
-void fpico_load__(char *file, int *len){
+char* add_null_term(char *str, int nstr){
+    char *_str;
+    _str = malloc(nstr+1);
+    memcpy(_str,str,nstr); 
+    _str[nstr]=0;
+    return _str;
+}
+
+void fpico_load_(char *file, int _nfile){
 	Py_XDECREF(pPico); Py_XDECREF(pParams);
-	char _file[*len+1]; memcpy(&_file,file,*len); _file[*len]=0;
+    char *_file = add_null_term(file,_nfile);
+    printf("%s",_file);
 	Py_Check(pPico = pico_load(_file));
     fpico_reset_params_();
     fpico_reset_requested_outputs_();
+    free(_file);
 }
 
 void check_loaded(void){
@@ -37,24 +46,26 @@ void fpico_reset_requested_outputs_(){
 	pOutputs = Py_None;
 }
 
-void fpico_request_output__(char *name, int *len){
+void fpico_request_output__(char *name, int nname){
 	check_loaded();
 	PyObject *pName;
-	char _name[*len+1]; memcpy(&_name,name,*len); _name[*len]=0;
+	char _name = add_null_term(name,nname);
 	Py_Check(pName = PyString_FromString(_name));
 	if (pOutputs == Py_None) Py_Check(pOutputs = PySet_New(NULL));
 	PySet_Add(pOutputs,pName);
 	Py_DECREF(pName);
+    free(_name);
 }
 
-void fpico_set_param__(char *name, int *len, double *value){
+void fpico_set_param__(char *name, double *value, int nname){
 	check_loaded();
     PyObject *pName, *pValue;
-	char _name[*len+1]; memcpy(&_name,name,*len); _name[*len]=0;
+	char _name = add_null_term(name,nname);
 	Py_Check(pName = PyString_FromString(_name));
 	Py_Check(pValue = PyFloat_FromDouble(*value));
 	PyDict_SetItem(pParams,pName,pValue);
 	Py_DECREF(pName); Py_DECREF(pValue);
+    free(_name);
 }
 
 void fpico_compute_result__(int *success){
@@ -69,25 +80,29 @@ void fpico_compute_result__(int *success){
 	}
 }
 
-int fpico_has_output__(char *output, int *len){
+void fpico_has_output__(char *output, int *has, int noutput){
 	check_loaded();
-	char _output[*len+1]; memcpy(&_output,output,*len); _output[*len]=0;
-	return pico_has_output(pPico,_output) ? 1 : 0;
+    int has;
+    char *_output = add_null_term(output,noutput)
+	*has = pico_has_output(pPico,_output) ? 1 : 0;
+    free(_output);
 }
 
-void fpico_get_output_len__(char *key, int *len, int *nresult){
+void fpico_get_output_len__(char *key, int *len, int *nresult, int nkey){
 	check_computed();
-	char _key[*len+1]; memcpy(&_key,key,*len); _key[*len]=0;
+	char *_key = add_null_term(key,nkey);
 	pico_get_output_len(pResult,_key,nresult);
+    free(_key);
 }
 
-void fpico_set_verbose_(bool *verbose){
+void fpico_set_verbose_(int *verbose){
 	check_loaded();
 	pico_set_verbose(pPico,*verbose);
 }
 
-void fpico_read_output__(char *key, int *len, double result[], int *istart, int *iend){
+void fpico_read_output__(char *key, int *len, double result[], int *istart, int *iend, int nkey){
 	check_computed();
-	char _key[*len+1]; memcpy(&_key,key,*len); _key[*len]=0;
+	char *_key = add_null_term(key,nkey);
 	pico_read_output(pResult,_key,&result,istart,iend);
+    free(_key);
 }
