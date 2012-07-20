@@ -11,10 +11,20 @@ char* add_null_term(char *str, int nstr){
     return _str;
 }
 
+void fpico_reset_params_(void){
+	Py_XDECREF(pParams);
+    Py_Check(pParams = PyDict_New());
+}
+
+void fpico_reset_requested_outputs_(void){
+	Py_XDECREF(pOutputs);
+	pOutputs = Py_None;
+}
+
+
 void fpico_load_(char *file, int _nfile){
 	Py_XDECREF(pPico); Py_XDECREF(pParams);
     char *_file = add_null_term(file,_nfile);
-    printf("%s",_file);
 	Py_Check(pPico = pico_load(_file));
     fpico_reset_params_();
     fpico_reset_requested_outputs_();
@@ -36,20 +46,11 @@ void check_computed(void){
 	}
 }
 
-void fpico_reset_params_(){
-	Py_XDECREF(pParams);
-    Py_Check(pParams = PyDict_New());
-}
 
-void fpico_reset_requested_outputs_(){
-	Py_XDECREF(pOutputs);
-	pOutputs = Py_None;
-}
-
-void fpico_request_output__(char *name, int nname){
+void fpico_request_output_(char *name, int nname){
 	check_loaded();
 	PyObject *pName;
-	char _name = add_null_term(name,nname);
+	char *_name = add_null_term(name,nname);
 	Py_Check(pName = PyString_FromString(_name));
 	if (pOutputs == Py_None) Py_Check(pOutputs = PySet_New(NULL));
 	PySet_Add(pOutputs,pName);
@@ -57,10 +58,10 @@ void fpico_request_output__(char *name, int nname){
     free(_name);
 }
 
-void fpico_set_param__(char *name, double *value, int nname){
+void fpico_set_param_(char *name, double *value, int nname){
 	check_loaded();
     PyObject *pName, *pValue;
-	char _name = add_null_term(name,nname);
+	char *_name = add_null_term(name,nname);
 	Py_Check(pName = PyString_FromString(_name));
 	Py_Check(pValue = PyFloat_FromDouble(*value));
 	PyDict_SetItem(pParams,pName,pValue);
@@ -68,7 +69,7 @@ void fpico_set_param__(char *name, double *value, int nname){
     free(_name);
 }
 
-void fpico_compute_result__(int *success){
+void fpico_compute_result_(int *success){
 	check_loaded();
 	Py_XDECREF(pResult);
 	pResult = pico_compute_result_dict(pPico, pParams,pOutputs);
@@ -80,15 +81,14 @@ void fpico_compute_result__(int *success){
 	}
 }
 
-void fpico_has_output__(char *output, int *has, int noutput){
+void fpico_has_output_(char *output, int *has, int noutput){
 	check_loaded();
-    int has;
-    char *_output = add_null_term(output,noutput)
-	*has = pico_has_output(pPico,_output) ? 1 : 0;
+    char *_output = add_null_term(output,noutput);
+	(*has) = pico_has_output(pPico,_output) ? 1 : 0;
     free(_output);
 }
 
-void fpico_get_output_len__(char *key, int *len, int *nresult, int nkey){
+void fpico_get_output_len_(char *key, int *len, int *nresult, int nkey){
 	check_computed();
 	char *_key = add_null_term(key,nkey);
 	pico_get_output_len(pResult,_key,nresult);
@@ -100,7 +100,7 @@ void fpico_set_verbose_(int *verbose){
 	pico_set_verbose(pPico,*verbose);
 }
 
-void fpico_read_output__(char *key, int *len, double result[], int *istart, int *iend, int nkey){
+void fpico_read_output_(char *key, double *result, int *istart, int *iend, int nkey){
 	check_computed();
 	char *_key = add_null_term(key,nkey);
 	pico_read_output(pResult,_key,&result,istart,iend);

@@ -15,7 +15,7 @@ config = Configuration('pypico',
 )
 
 config.add_installed_library('pico', 
-                             ['pypico/fpico.f90','pypico/cpico.c','pypico/fpico_cwrap.c'],
+                             ['pypico/cpico.c','pypico/fpico_cwrap.c'],
                              'pypico',
                              {'include_dirs':[get_python_inc()]})
 
