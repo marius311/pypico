@@ -18,7 +18,7 @@ contains
         integer, optional, intent(out) :: error !Zero if OK
         logical, optional, intent(out) :: used_pico
         integer(4) :: n_q_trans, dum
-        real(8), dimension(:), allocatable :: tmp_trans
+        real(8), dimension(:), allocatable :: tmp_arr
         real(8) :: fac
         logical :: success
 
@@ -115,20 +115,21 @@ contains
 
             if (P%WantTransfer) then
                 call fpico_get_output_len("k",n_q_trans)
+
                 n_q_trans = n_q_trans-1
                 call InitializePowers(p%initpower,p%omegak)
 
                 MT%num_q_trans = n_q_trans
                 call Transfer_Allocate(MT)
 
-                allocate(tmp_trans(n_q_trans))
+                allocate(tmp_arr(n_q_trans))
 
-                call fpico_read_output("k",tmp_trans,0,n_q_trans-1)
-                MT%q_trans = tmp_trans
-                MT%TransferData(Transfer_kh,:,1) = tmp_trans
-                call fpico_read_output("pk",tmp_trans,0,n_q_trans-1)
-                MT%TransferData(Transfer_tot,:,1) = tmp_trans
-                deallocate(tmp_trans)
+                call fpico_read_output("k",tmp_arr,0,n_q_trans-1)
+                MT%q_trans = tmp_arr
+                MT%TransferData(Transfer_kh,:,1) = tmp_arr
+                call fpico_read_output("pk",tmp_arr,0,n_q_trans-1)
+                MT%TransferData(Transfer_tot,:,1) = tmp_arr
+                deallocate(tmp_arr)
 
                 call Transfer_Get_sigma8(MT,8._8)
             end if
