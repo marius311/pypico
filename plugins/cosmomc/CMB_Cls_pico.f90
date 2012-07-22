@@ -61,10 +61,7 @@ contains
     P%Num_Nu_Massive = CMB%nnu
     P%Num_Nu_Massless = 0
     P%YHe = CMB%YHe
-!    P%initpower%ScalarPowerAmp(1) = 10.**(-10) * CMB%norm(1)
-!    P%initpower%an(1) = CMB%initpower(1)
-
-
+       
   end subroutine CMBToCAMB
 
  function RecomputeTransfers (A, B)
@@ -115,6 +112,7 @@ contains
          call PICO_GetResults(P, error, used_pico)
          if (Feedback>1) then
             if (used_pico) then
+                allocate(CTransScal%Delta_p_l_k(1,1,1)) !AcceptReject below expects this allocated
                 write (*,*) 'Used PICO'
             else
                 write (*,*) 'Used CAMB'
@@ -178,14 +176,12 @@ contains
          if (any(Info%Theory%cl(:,1) < 0 )) then
             error = 1
             !Kill initial power spectra that go negative
-            print *, "neg cl"
             return
          end if
    
          if (Use_LSS) then
-            Info%Theory%sigma_8 = MT%sigma_8(1,1)
-!            Info%Transfers%MTrans = MT
-#ifdef DR71RG 
+            Info%Theory%sigma_8 = Info%Transfers%MTrans%sigma_8(matter_power_lnzsteps,1)
+#ifdef DR71RG
             !! BR09 get lrgtheory info
             if (num_matter_power /= 0 .and. use_dr7lrg) then
                 do zix = 1,matter_power_lnzsteps
