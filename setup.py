@@ -4,14 +4,14 @@ from distutils.sysconfig import get_python_inc
 
 config = Configuration('pypico',
    name='pypico',
-   version='3.1.0',
+   version='3.2.0',
    author='Marius Millea',
    author_email='mmillea@ucdavis.edu',
    packages=['pypico'],
    url='http://pypi.python.org/pypi/pypico/',
    license='LICENSE.txt',
    description='Quickly compute the CMB powerspectra and matter transfer functions.',
-   long_description=open('README').read(),
+   long_description=open('README.rst').read(),
 )
 
 config.add_installed_library('pico', 
