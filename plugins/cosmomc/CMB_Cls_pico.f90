@@ -14,6 +14,7 @@ module CMB_Cls
   use HST
   use IO
   use pico_camb
+  use modeldata, only : CTransScal, CTransVec, CTransTens
   implicit none
   logical :: Use_SN =.false. !Compute Supernovae likelihoods only when background changes
   logical :: Use_HST =.false. !Compute HST likelihoods only when background changes
@@ -57,7 +58,8 @@ contains
      w_lam = -1
     end if
     if (CMB%nnu < 3.04) call MpiStop('CMBToCAMB: nnu < 3.04, would give negative masless neutrinos')
-    P%Num_Nu_Massless = CMB%nnu - 3 !AL Sept 11 for CAMB's new treatment; previously 3.046; we assume three massive
+    P%Num_Nu_Massive = CMB%nnu
+    P%Num_Nu_Massless = 0
     P%YHe = CMB%YHe
        
   end subroutine CMBToCAMB
@@ -86,7 +88,7 @@ contains
    Type(ParamSetInfo) Info
    real Cls(lmax,1:num_cls_tot)
    type(CAMBParams)  P
-   logical NewTransfers
+   logical NewTransfers, used_pico
    integer zix
    character(LEN=128) :: LogLine
   
@@ -100,10 +102,27 @@ contains
          call CMBToCAMB(CMB, P) 
          call SetCAMBInitPower(P,CMB,1)
       
-         if (Feedback > 1) write (*,*) 'Calling PICO'
+         if (Feedback > 1) write (*,*) 'Getting Cls'
          Threadnum =num_threads
   
-         call PICO_GetResults(P, error)
+         MT =  Info%Transfers%MTrans
+         CTransScal = Info%Transfers%ClTransScal
+         CTransVec  = Info%Transfers%ClTransVec
+         CTransTens = Info%Transfers%ClTransTens
+         call PICO_GetResults(P, error, used_pico)
+         if (Feedback>1) then
+            if (used_pico) then
+                allocate(CTransScal%Delta_p_l_k(1,1,1)) !AcceptReject below expects this allocated
+                write (*,*) 'Used PICO'
+            else
+                write (*,*) 'Used CAMB'
+            end if
+         end if
+         Info%Transfers%Params = P
+         Info%Transfers%MTrans = MT
+         Info%Transfers%ClTransScal = CTransScal
+         Info%Transfers%ClTransVec  = CTransVec
+         Info%Transfers%ClTransTens = CTransTens
 
          NewTransfers = .true.
          Info%LastParams = CMB
@@ -133,7 +152,6 @@ contains
           write (logLine,*) 'CAMB called ',ncalls, ' times; ', nerrors,' errors'
           call IO_WriteLog(logfile_unit,logLine)
          end if 
-         if (Feedback > 1) write (*,*) 'CAMB done'
 
     end if 
     
@@ -143,14 +161,16 @@ contains
       !Always get everything again. Slight waste of time in general, but allows complete mixing of fast
       !parameters, and works with lensing
 
-!
-!         call CAMB_TransfersToPowers(Info%Transfers)
-!            !this sets slow CAMB params correctly from value stored in Transfers
-!         if (global_error_flag/=0) then
-!          error=global_error_flag
-!          return
-!         end if
-
+        if (.not. used_pico) then
+         call SetCAMBInitPower(Info%Transfers%Params,CMB,1)
+         call CAMB_TransfersToPowers(Info%Transfers)
+            !this sets slow CAMB params correctly from value stored in Transfers
+         if (global_error_flag/=0) then
+          error=global_error_flag
+          return
+         end if
+        end if
+           
          call SetTheoryFromCAMB(Info%Theory)
     
          if (any(Info%Theory%cl(:,1) < 0 )) then
@@ -161,7 +181,7 @@ contains
    
          if (Use_LSS) then
             Info%Theory%sigma_8 = Info%Transfers%MTrans%sigma_8(matter_power_lnzsteps,1)
-#ifdef DR71RG 
+#ifdef DR71RG
             !! BR09 get lrgtheory info
             if (num_matter_power /= 0 .and. use_dr7lrg) then
                 do zix = 1,matter_power_lnzsteps
@@ -476,7 +496,7 @@ contains
         P%InitPower%nn = 1
         P%AccuratePolarization = num_cls/=1 
         P%Reion%use_optical_depth = .true.
-        P%OnlyTransfers = .false.
+        P%OnlyTransfers = .true.
 
         if (use_BAO) P%want_zdrag = .true. !JH
         P%want_zstar = .false. !set to true if you want CAMB to calculate exact z_star

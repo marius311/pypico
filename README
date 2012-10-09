@@ -85,8 +85,8 @@ You should put these calls directly in your Makefile via::
 Plugin Folder
 -------------
 
-You can find the various plugin files in a folder `plugin` in the archive.
-If you installed *PICO* via `pip` or `easy_install`, you can find the location
+You can find the various plugin files in a folder ``plugin`` in the archive.
+If you installed *PICO* via ``pip`` or ``easy_install``, you can find the location
 of the plugins by running::
 
     python -c "import pypico; print pypico.get_folder()"
@@ -103,6 +103,7 @@ for which it cannot calculate the relevant quantities.
 To install the CAMB plugin, do the following:
 
 * Copy ``plugins/camb/pico_camb.f90`` to the folder containing your code
+* In your Makefile, make sure ``pico_camb.f90`` gets compiled. 
 * Add a call ``fpico_load(file)`` to load a *PICO* datafile.
 * Replace ``CAMB_GetResults`` with ``PICO_GetResults``
 * Compile your code, making sure to use the correct include/link flags (see `Linking`_).
@@ -132,6 +133,11 @@ CosmoSlik Plugin
 To install the CosmoSlik plugin, copy ``plugins/cosmoslik/pico.py`` to 
 the ``cosmoslik/models/`` folder. 
 
+
+Known Issues
+============
+
+* -fast with Intel Fortran does not work
 
 Authors
 =======

@@ -88,13 +88,23 @@ def _version_ok(version):
     return mine[:2]==theirs[:2] and mine[2]>=theirs[2]
 
 
-def load_pico(datafile, module=None, check_version=True):
+def load_pico(datafile, verbose=False, module=None, check_version=True):
     """
     Load a PICO data datafile and return a PICO object.
     
-    If module is not None, it can specify a path to a Python file, which will 
-    be used instead of the code contained in the datafile. This is generally 
-    used for debugging purposes only.
+    Parameters
+    ----------
+    
+    datafile : 
+        Path to the PICO datafile
+    verbose, optional : 
+        Whether to print debugging messages during calculation. (default: False)
+    check_version, optional : 
+        Can set to False to force PICO to use an old datafile. (default: False)
+    module, optional : 
+        If not None, it can specify a path to a Python file, which will 
+        used instead of the code contained in the datafile. This is generally 
+        used for debugging purposes only. (default: None)
     """
     
     try:
@@ -122,31 +132,43 @@ def load_pico(datafile, module=None, check_version=True):
             raise Exception("You PICO version (%s) and the PICO version used to create the datafile '%s' (%s) are incompatible."%(_version,datafile,data['version']))
     
     pico = cPickle.loads(data['pico'])
-    pico._code = data['code']
+    data.pop('pico')
+    pico._pico_data = data
     return pico
 
     
-def create_pico(codefile,datafile):
+def create_pico(codefile,datafile,args=None,existing_pico=None):
     """
     Create a PICO datafile.
     
     A PICO datafile is a Pickle of a dictionary which contains 
     some Python code and an instance of a PICO class.
     
-    Arguments:    
-        codefile - A path to Python module which contains a get_pico function. The 
-                   function should return a PICO object which gets Pickled into the 
-                   datafile.
-        datafile - Path for the output datafile
+    Parameters
+    ----------    
+        codefile :
+            A path to a Python module which contains a ``get_pico(*args)`` function. 
+            The function should return a ``PICO`` object which gets Pickled into the 
+            datafile.
+        datafile :
+            Path for the output datafile
+        args, optional :
+            Passed to get_pico(*args)
+        existing_pico, optional :
+            Don't call ``get_pico``, just bundle up this existing
+            PICO object with the given code
     """
     
     print "Creating PICO datafile..."
     with open(codefile) as f: code = f.read()
-    name = 'pypico.datafiles.%s'%(hashlib.md5(os.path.abspath(codefile) + time.ctime()).hexdigest())
-    mymod = imp.new_module(name)
-    exec code in mymod.__dict__
-    sys.modules[name]=mymod
-    pico = mymod.get_pico()
+    if existing_pico is None:
+        name = 'pypico.datafiles.%s'%(hashlib.md5(os.path.abspath(codefile) + time.ctime()).hexdigest())
+        mymod = imp.new_module(name)
+        exec code in mymod.__dict__ 
+        sys.modules[name]=mymod
+        pico = mymod.get_pico(*args)
+    else:
+        pico = load_pico(existing_pico)
+        name = pico._pico_data['module_name']
     print "Saving '%s'..."%(os.path.basename(datafile))
     with open(datafile,'w') as f: cPickle.dump({'code':code,'module_name':name,'pico':cPickle.dumps(pico,protocol=2),'version':_version},f,protocol=2)
-    
