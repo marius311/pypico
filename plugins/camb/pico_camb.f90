@@ -19,8 +19,8 @@ contains
         integer, optional, intent(out) :: error !Zero if OK
         logical, optional, intent(out) :: used_pico
         integer(fpint) :: n_q_trans, dum
-        real(8), dimension(:), allocatable :: tmp_arr
-        real(8) :: fac
+        real(fpreal), dimension(:), allocatable :: tmp_arr
+        real(fpreal) :: fac
         integer(fpint) :: success
 
         call CAMBParams_Set(P)
