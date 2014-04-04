@@ -1,6 +1,6 @@
-# Manually make sure our C types and Fortran types are the same size 
+# Manually make sure our C types and Fortran types are the same size
 # See corresponding line in fpico_interface.f90
-from libc.stdint cimport uint32_t, uint64_t 
+from libc.stdint cimport uint32_t, uint64_t
 ctypedef public uint64_t fpint
 ctypedef public double   fpreal
 ctypedef public uint32_t fpnchar
@@ -23,19 +23,19 @@ from numpy import array
 cdef extern from "Python.h":
     void Py_Initialize()
 
-cdef extern void initlibpico()
- 
+cdef extern void initpico()
+
 cdef public void pico_init(fpint _kill_on_error):
     Py_Initialize()
-    initlibpico()
+    initpico()
     global kill_on_error
     kill_on_error =  not (_kill_on_error==0)
 
 
 cdef public void fpico_init_(fpint *_kill_on_error):
     pico_init(_kill_on_error[0])
-    
-    
+
+
 cdef char* add_null_term(char *str, fpnchar nstr):
     """Convert a Fortran string to a C string by adding a null terminating character"""
     cdef char *_str = <char*>malloc(sizeof(char)*(nstr+1))
@@ -43,7 +43,7 @@ cdef char* add_null_term(char *str, fpnchar nstr):
     _str[nstr]=0
     return _str
 
-   
+
 cdef public print_last_exception_():
     """Print a stack-trace for the last Python exception"""
     global last_exception
@@ -77,7 +77,7 @@ cdef public pico_load(char *file):
         return pypico.load_pico(str(file))
     except Exception as e:
         handle_exception(e)
-        
+
 
 cdef public void fpico_load_(char *file, fpnchar nfile):
     try:
@@ -94,36 +94,44 @@ cdef public void fpico_reset_params_():
         gparams = dict()
     except Exception as e:
         handle_exception(e)
-        
-        
+
+
 cdef public void fpico_set_param_(char *name, double *value, fpnchar nname):
     try:
         global gparams
         gparams[str(add_null_term(name,nname))]=value[0]
     except Exception as e:
         handle_exception(e)
-        
-        
+
+
+cdef public void fpico_set_param_eval_(char *name, char *value, fpnchar nname, fpnchar nvalue):
+    try:
+        global gparams
+        gparams[str(add_null_term(name,nname))]=eval(str(add_null_term(value,nvalue)))
+    except Exception as e:
+        handle_exception(e)
+
+
 cdef public void fpico_reset_requested_outputs_():
     try:
         global goutputs
         goutputs = []
     except Exception as e:
         handle_exception(e)
-        
-        
+
+
 cdef public void fpico_request_output_(char *name, fpnchar nname):
     try:
         global goutputs
         goutputs.append(str(add_null_term(name,nname)))
     except Exception as e:
         handle_exception(e)
-        
-        
+
+
 cdef public void fpico_compute_result_(int *success):
     try:
         global gpico, gparams, goutputs, gresult, gverbose
-        if gverbose: 
+        if gverbose:
             print 'Calling PICO with parameters: %s'%gparams
             print 'Getting the outputs: %s'%goutputs
         try:
@@ -133,10 +141,10 @@ cdef public void fpico_compute_result_(int *success):
         except CantUsePICO as c:
             success[0] = 0
             if gverbose: print 'Failed to call PICO: %s'%c
-            
+
     except Exception as e:
         handle_exception(e)
-        
+
 cdef public void fpico_read_output_(char *key, fpreal *output, fpint *istart, fpint *iend, fpnchar nkey):
     try:
         res = gresult[str(add_null_term(key,nkey))]
@@ -152,12 +160,12 @@ cdef public void fpico_get_output_len_(char *key, fpint *len, fpnchar nkey):
     except Exception as e:
         handle_exception(e)
 
-        
+
 cdef public void fpico_set_verbose_(fpint *verbose):
     try:
         global gverbose
         gverbose = (verbose[0]!=0)
     except Exception as e:
         handle_exception(e)
-        
-        
+
+

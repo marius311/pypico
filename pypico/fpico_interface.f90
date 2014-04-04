@@ -29,6 +29,11 @@ module fpico
             real(fpreal), intent(in) :: value
         end
 
+        subroutine fpico_set_param_eval(name,value)
+            import :: fpreal
+            character(len=*), intent(in) :: name, value
+        end
+
 
         subroutine fpico_reset_requested_outputs()
         end
