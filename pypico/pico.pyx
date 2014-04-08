@@ -18,10 +18,11 @@ from libc.stdlib cimport malloc
 from libc.string cimport memcpy
 from numpy cimport PyArray_DATA
 from numpy import array
-
-
+from cpython.ref cimport PyObject, Py_XDECREF
 cdef extern from "Python.h":
     void Py_Initialize()
+
+
 
 cdef extern void initpico()
 
@@ -31,20 +32,7 @@ cdef public void pico_init(fpint _kill_on_error):
     global kill_on_error
     kill_on_error =  not (_kill_on_error==0)
 
-
-cdef public void fpico_init_(fpint *_kill_on_error):
-    pico_init(_kill_on_error[0])
-
-
-cdef char* add_null_term(char *str, fpnchar nstr):
-    """Convert a Fortran string to a C string by adding a null terminating character"""
-    cdef char *_str = <char*>malloc(sizeof(char)*(nstr+1))
-    memcpy(_str,str,nstr)
-    _str[nstr]=0
-    return _str
-
-
-cdef public print_last_exception_():
+cdef public void print_last_exception_():
     """Print a stack-trace for the last Python exception"""
     global last_exception
     print_exception(last_exception)
@@ -65,6 +53,112 @@ cdef void handle_exception(e):
 
 
 
+#============
+# C interface
+#============
+
+cdef public pico_load(char *file):
+    try:
+        return pypico.load_pico(str(file))
+    except Exception as e:
+        handle_exception(e)
+
+cdef public pico_compute_result_dict(pico, params, outputs):
+    try:
+        verbose = getattr(pico,'_verbose',False)
+        if verbose:
+            print 'Calling PICO with parameters: %s'%params
+            print 'Getting the outputs: %s'%outputs
+            try:
+                result = pico.get(outputs=outputs,**params)
+                if verbose: print 'Succesfully called PICO.'
+                return result
+            except CantUsePICO as c:
+                if verbose: print 'Failed to call PICO: %s'%c
+    except Exception as e:
+        handle_exception(e)
+
+cdef public pico_compute_result(pico, int nparams, char* names[], double values[]):
+    try:
+        return pico_compute_result2(pico,nparams,names,values,0,NULL)
+    except Exception as e:
+        handle_exception(e)
+
+cdef public pico_compute_result2(pico, int nparams, char* names[], double values[], int noutputs, char *outputs[]):
+    try:
+        return pico_compute_result_dict(pico,
+                                        {names[i]:values[i] for i in range(nparams)},
+                                        [outputs[i] for i in range(noutputs)])
+    except Exception as e:
+        handle_exception(e)
+
+
+cdef public bint pico_check_success(result):
+    return result!=None
+
+
+cdef public void pico_read_output(result, char *key, double **output, int *istart, int *iend):
+    """
+    Read an output from a computed PICO result.
+    
+    Parameters:
+    -----------
+    
+    result : PyObject*
+        The `result` object as returned by a `pico_compute_result` variant.
+    key : char*
+        The name of the desired output.
+    result : double**
+        A pointer to a double[] which will hold the output array. If the double[] array
+        is NULL, it will be allocated and the pointer returned. In either case,
+        it is up to the user to free the memory.
+    istart, iend : int*
+        Start and end indices. Set to -1 to read all values.
+        The return value of these variables how many values were actually written.
+    """
+    try:
+        arr = result[key]
+        if arr.dtype.itemsize != sizeof(double): arr=array(arr,dtype=np_fpreal)
+        if (iend[0]<0) or (iend[0]>arr.size): iend[0]=arr.size
+        if (istart[0]<0): istart[0]=0
+        nresult = iend[0]-istart[0]+1
+        if output[0]==NULL: output[0]=<double*>malloc(sizeof(double)*nresult)
+        memcpy(output[0],PyArray_DATA(arr[istart[0]:]),sizeof(double)*nresult)
+    except Exception as e:
+        handle_exception(e)
+
+
+
+cdef public void pico_get_output_len(result, char *key, int *nresult):
+    try:    
+        nresult[0] = result[key].size
+    except Exception as e:
+        handle_exception(e)
+
+cdef public void pico_free_result(result):
+    try:
+        Py_XDECREF(<PyObject*>result)
+    except Exception as e:
+        handle_exception(e)
+
+cdef public bint pico_has_output(pico, char *key):
+    try:
+        return key in pico.outputs
+    except Exception as e:
+        handle_exception(e)
+
+cdef public void pico_set_verbose(pico, bint verbose):
+    try:
+        pico._verbose = (verbose==True)
+    except Exception as e:
+        handle_exception(e)
+
+
+#==================
+# Fortran interface
+#==================
+
+
 gpico = None
 gparams = None
 goutputs = None
@@ -72,11 +166,16 @@ gresult = None
 gverbose = False
 
 
-cdef public pico_load(char *file):
-    try:
-        return pypico.load_pico(str(file))
-    except Exception as e:
-        handle_exception(e)
+cdef char* add_null_term(char *str, fpnchar nstr):
+    """Convert a Fortran string to a C string by adding a null terminating character"""
+    cdef char *_str = <char*>malloc(sizeof(char)*(nstr+1))
+    memcpy(_str,str,nstr)
+    _str[nstr]=0
+    return _str
+
+
+cdef public void fpico_init_(fpint *_kill_on_error):
+    pico_init(_kill_on_error[0])
 
 
 cdef public void fpico_load_(char *file, fpnchar nfile):
@@ -131,17 +230,8 @@ cdef public void fpico_request_output_(char *name, fpnchar nname):
 cdef public void fpico_compute_result_(int *success):
     try:
         global gpico, gparams, goutputs, gresult, gverbose
-        if gverbose:
-            print 'Calling PICO with parameters: %s'%gparams
-            print 'Getting the outputs: %s'%goutputs
-        try:
-            gresult = gpico.get(outputs=goutputs,**gparams)
-            success[0] = 1
-            if gverbose: print 'Succesfully called PICO.'
-        except CantUsePICO as c:
-            success[0] = 0
-            if gverbose: print 'Failed to call PICO: %s'%c
-
+        gresult = pico_compute_result_dict(gpico,gparams,goutputs)
+        success[0] = (gresult!=None)
     except Exception as e:
         handle_exception(e)
 
@@ -163,8 +253,8 @@ cdef public void fpico_get_output_len_(char *key, fpint *len, fpnchar nkey):
 
 cdef public void fpico_set_verbose_(fpint *verbose):
     try:
-        global gverbose
-        gverbose = (verbose[0]!=0)
+        global gpico
+        gpico._verbose = (verbose[0]!=0)
     except Exception as e:
         handle_exception(e)
 
