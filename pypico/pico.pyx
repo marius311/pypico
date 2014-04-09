@@ -21,12 +21,23 @@ from numpy import array
 from cpython.ref cimport PyObject, Py_XDECREF
 cdef extern from "Python.h":
     void Py_Initialize()
-
-
-
 cdef extern void initpico()
 
-cdef public void pico_init(fpint _kill_on_error):
+
+
+
+
+cdef public void pico_init(bint _kill_on_error):
+    """
+    This must be called before calling any other PICO interface functions.
+
+    Parameters:
+    -----------
+    _kill_on_error : bool
+        Set to True to kill the program immediately on a Python error and print
+        an error message, or set to False to do your own error handling by
+        using `Py_checkError`.
+    """
     Py_Initialize()
     initpico()
     global kill_on_error
@@ -57,13 +68,57 @@ cdef void handle_exception(e):
 # C interface
 #============
 
-cdef public pico_load(char *file):
+cdef public pico_load(char *filename):
+    """
+    Load a PICO data file.
+
+    Parameters:
+    -----------
+    filename : char*
+        The filename
+
+    Returns:
+    --------
+    pico : PyObject*
+        The loaded pico object, which should be passed to other functions.
+        If `kill_on_error` is False, call `pico_check_success` on this object
+        to ensure loading succeded. 
+    """
     try:
-        return pypico.load_pico(str(file))
+        return pypico.load_pico(str(filename))
     except Exception as e:
         handle_exception(e)
 
+
+
+cdef public bint pico_check_success(result):
+    """
+    If `kill_on_error` is False, call pico_check_success on the object
+    return from `pico_load` to ensure loading succeded. 
+    """
+    return result!=None
+
+
+
 cdef public pico_compute_result_dict(pico, params, outputs):
+    """
+    Call PICO to compute a result.
+
+    Parameters:
+    -----------
+    pico : PyObject*
+        The pico object returned from `pico_load`.
+    params : PyObject*
+        A parameter dictionary containing input parameters and values.
+    outputs : PyObject*
+        A list containing the requested outputs.
+
+    Returns:
+    --------
+    result : PyObject*
+        The result of the PICO computation, which can be read with `pico_read_output`. 
+        It is up to the user to free this memory with `pico_free_result`.
+    """
     try:
         verbose = getattr(pico,'_verbose',False)
         if verbose:
@@ -79,12 +134,58 @@ cdef public pico_compute_result_dict(pico, params, outputs):
         handle_exception(e)
 
 cdef public pico_compute_result(pico, int nparams, char* names[], double values[]):
+    """
+    Call PICO to compute a result. (Assumes all outputs are requested.)
+
+    Parameters:
+    -----------
+    pico : PyObject*
+        The pico object returned from `pico_load`.
+    names : char*[]
+        An array of parameter names. 
+    values : double[]
+        An array of parameter values.
+    nparams : int
+        The length of the name/value arrays.
+
+    Returns:
+    --------
+    result : PyObject*
+        The result of the PICO computation, which can be read with `pico_read_output`. 
+        It is up to the user to free this memory with `pico_free_result`.
+    """
     try:
         return pico_compute_result2(pico,nparams,names,values,0,NULL)
     except Exception as e:
         handle_exception(e)
 
+
 cdef public pico_compute_result2(pico, int nparams, char* names[], double values[], int noutputs, char *outputs[]):
+    """
+    Call PICO to compute a result.
+
+    Parameters:
+    -----------
+    pico : PyObject*
+        The pico object returned from `pico_load`.
+    names : char*[]
+        An array of parameter names. 
+    values : double[]
+        An array of parameter values.
+    nparams : int
+        The number of name/value pairs.
+    outputs : char*[]
+        An array of requested output names.
+    noutputs : int
+        The length of the outputs array.
+
+    Returns:
+    --------
+    result : PyObject*
+        The result of the PICO computation, which can be read with `pico_read_output`. 
+        It is up to the user to free this memory with `pico_free_result`.
+
+    """
     try:
         return pico_compute_result_dict(pico,
                                         {names[i]:values[i] for i in range(nparams)},
@@ -93,20 +194,17 @@ cdef public pico_compute_result2(pico, int nparams, char* names[], double values
         handle_exception(e)
 
 
-cdef public bint pico_check_success(result):
-    return result!=None
 
 
-cdef public void pico_read_output(result, char *key, double **output, int *istart, int *iend):
+cdef public void pico_read_output(result, char *name, double **output, int *istart, int *iend):
     """
     Read an output from a computed PICO result.
     
     Parameters:
     -----------
-    
     result : PyObject*
         The `result` object as returned by a `pico_compute_result` variant.
-    key : char*
+    name : char*
         The name of the desired output.
     result : double**
         A pointer to a double[] which will hold the output array. If the double[] array
@@ -114,10 +212,10 @@ cdef public void pico_read_output(result, char *key, double **output, int *istar
         it is up to the user to free the memory.
     istart, iend : int*
         Start and end indices. Set to -1 to read all values.
-        The return value of these variables how many values were actually written.
+        These will be set to the starting and ending indices which were read.
     """
     try:
-        arr = result[key]
+        arr = result[name]
         if arr.dtype.itemsize != sizeof(double): arr=array(arr,dtype=np_fpreal)
         if (iend[0]<0) or (iend[0]>arr.size): iend[0]=arr.size
         if (istart[0]<0): istart[0]=0
@@ -129,25 +227,71 @@ cdef public void pico_read_output(result, char *key, double **output, int *istar
 
 
 
-cdef public void pico_get_output_len(result, char *key, int *nresult):
+cdef public void pico_get_output_len(result, char *name, int *nresult):
+    """
+    Get the maximum length of an output array.
+
+    Parameters:
+    -----------
+        result : PyObject*
+            The result returned from a `pico_compute_result` variant.
+        name : char* 
+            The name of the output.
+
+    Returns:
+    --------
+    nresult : int*
+        The length of the output array.
+    """
     try:    
-        nresult[0] = result[key].size
+        nresult[0] = result[name].size
     except Exception as e:
         handle_exception(e)
 
+
 cdef public void pico_free_result(result):
+    """
+    Free the memory of a result from a `pico_compute_result` variant.
+    """
     try:
         Py_XDECREF(<PyObject*>result)
     except Exception as e:
         handle_exception(e)
 
-cdef public bint pico_has_output(pico, char *key):
+
+cdef public bint pico_has_output(pico, char *name):
+    """
+    Check whether a PICO result has a given output.
+
+    Parameters:
+    -----------
+    pico : PyObject*
+        The pico object returned from `pico_load`.
+    name : char *
+        The name to check.
+
+    Returns:
+    --------
+    result : bool
+        Whether the output exists.
+    """    
     try:
-        return key in pico.outputs
+        return name in pico.outputs
     except Exception as e:
         handle_exception(e)
 
+
 cdef public void pico_set_verbose(pico, bint verbose):
+    """
+    Set verbose option.
+
+    Parameters:
+    -----------
+    pico : PyObject*
+        The pico object returned from `pico_load`.
+    verbose : bool
+        Verbosity.
+    """
     try:
         pico._verbose = (verbose==True)
     except Exception as e:
@@ -178,10 +322,10 @@ cdef public void fpico_init_(fpint *_kill_on_error):
     pico_init(_kill_on_error[0])
 
 
-cdef public void fpico_load_(char *file, fpnchar nfile):
+cdef public void fpico_load_(char *filename, fpnchar nfilename):
     try:
         global gpico
-        gpico = pico_load(add_null_term(file,nfile))
+        gpico = pico_load(add_null_term(filename,nfilename))
         gparams = dict()
     except Exception as e:
         handle_exception(e)
@@ -235,18 +379,18 @@ cdef public void fpico_compute_result_(int *success):
     except Exception as e:
         handle_exception(e)
 
-cdef public void fpico_read_output_(char *key, fpreal *output, fpint *istart, fpint *iend, fpnchar nkey):
+cdef public void fpico_read_output_(char *name, fpreal *output, fpint *istart, fpint *iend, fpnchar nname):
     try:
-        res = gresult[str(add_null_term(key,nkey))]
+        res = gresult[str(add_null_term(name,nname))]
         if res.dtype.itemsize != sizeof(fpreal): res=array(res,dtype=np_fpreal)
         memcpy(output,PyArray_DATA(res[istart[0]:]),sizeof(fpreal)*(iend[0] - istart[0] + 1))
     except Exception as e:
         handle_exception(e)
 
-cdef public void fpico_get_output_len_(char *key, fpint *len, fpnchar nkey):
+cdef public void fpico_get_output_len_(char *name, fpint *len, fpnchar nname):
     try:
         global gresult
-        len[0] = gresult[str(add_null_term(key,nkey))].size
+        len[0] = gresult[str(add_null_term(name,nname))].size
     except Exception as e:
         handle_exception(e)
 

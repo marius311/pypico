@@ -39,13 +39,13 @@ typedef uint32_t fpnchar;
   #endif
 #endif
 
-__PYX_EXTERN_C DL_IMPORT(void) pico_init(fpint);
+__PYX_EXTERN_C DL_IMPORT(void) pico_init(int);
 __PYX_EXTERN_C DL_IMPORT(void) print_last_exception_(void);
 __PYX_EXTERN_C DL_IMPORT(PyObject) *pico_load(char *);
+__PYX_EXTERN_C DL_IMPORT(int) pico_check_success(PyObject *);
 __PYX_EXTERN_C DL_IMPORT(PyObject) *pico_compute_result_dict(PyObject *, PyObject *, PyObject *);
 __PYX_EXTERN_C DL_IMPORT(PyObject) *pico_compute_result(PyObject *, int, char **, double *);
 __PYX_EXTERN_C DL_IMPORT(PyObject) *pico_compute_result2(PyObject *, int, char **, double *, int, char **);
-__PYX_EXTERN_C DL_IMPORT(int) pico_check_success(PyObject *);
 __PYX_EXTERN_C DL_IMPORT(void) pico_read_output(PyObject *, char *, double **, int *, int *);
 __PYX_EXTERN_C DL_IMPORT(void) pico_get_output_len(PyObject *, char *, int *);
 __PYX_EXTERN_C DL_IMPORT(void) pico_free_result(PyObject *);
