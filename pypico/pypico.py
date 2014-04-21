@@ -158,12 +158,9 @@ def create_pico(codefile,datafile,args=None,existing_pico=None):
     """
 
     print "Creating PICO datafile..."
-    with open(codefile) as f: code = f.read()
     if existing_pico is None:
         name = 'pypico.datafiles.%s'%(hashlib.md5(os.path.abspath(codefile) + time.ctime()).hexdigest())
-        mymod = imp.new_module(name)
-        exec code in mymod.__dict__
-        sys.modules[name]=mymod
+        mymod = imp.load_source(name,codefile)
         pico = mymod.get_pico(*args)
     else:
         pico = load_pico(existing_pico)
