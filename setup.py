@@ -54,6 +54,7 @@ config.add_installed_library('pico',
 config.add_data_files(('','pypico/fpico_interface.f90'))
 config.add_data_files(('','pypico/pico.h'))
 config.add_data_files('plugins/camb/*')
+config.add_data_files('README.rst')
 
 
 setup(**config.todict())

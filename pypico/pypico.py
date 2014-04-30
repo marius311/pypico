@@ -3,7 +3,7 @@ Parameters for the Impatient Cosmologist
 Author: Marius Millea
 """
 
-_version = '3.3.0'
+__version__ = '3.3.0'
 
 import cPickle, imp, os, sys, numpy, hashlib, time
 from distutils.sysconfig import get_config_var, PREFIX, get_python_inc
@@ -82,9 +82,8 @@ class CantUsePICO(Exception):
 
 def _version_ok(version):
     """Checks for compatibility of a PICO datafile."""
-    global _version
-    mine = map(int,_version.split('.'))
-    theirs = map(int,version.split('.'))
+    mine = map(int,__version__.split('.'))
+    theirs = map(int,__version__.split('.'))
     return mine[0]==theirs[0] and mine[1]>=theirs[1]
 
 
