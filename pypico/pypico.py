@@ -158,15 +158,16 @@ def create_pico(codefile,datafile,args=None,existing_pico=None):
     """
 
     print "Creating PICO datafile..."
-    with open(codefile) as f: code = f.read()
     if existing_pico is None:
         name = 'pypico.datafiles.%s'%(hashlib.md5(os.path.abspath(codefile) + time.ctime()).hexdigest())
-        mymod = imp.new_module(name)
-        exec code in mymod.__dict__
-        sys.modules[name]=mymod
+        mymod = imp.load_source(name,codefile)
         pico = mymod.get_pico(*args)
     else:
         pico = load_pico(existing_pico)
         name = pico._pico_data['module_name']
     print "Saving '%s'..."%(os.path.basename(datafile))
-    with open(datafile,'w') as f: cPickle.dump({'code':code,'module_name':name,'pico':cPickle.dumps(pico,protocol=2),'version':_version},f,protocol=2)
+    with open(datafile,'w') as f: cPickle.dump({'code':open(codefile).read(),
+                                                'module_name':name,
+                                                'pico':cPickle.dumps(pico,protocol=2),
+                                                'version':_version},
+                                                f,protocol=2)
