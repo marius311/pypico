@@ -28,8 +28,20 @@ Install notes
 * If you don't have root access, you can append the option ``--user`` 
   to any of these install commands to install PICO under your home directory 
   instead of system wide.
+
+Requirements
+------------
+* Python 2.7.X
+* NumPy (>=1.6.1)
+* SciPy (>=0.10.1)
+
+
+Troubleshooting
+===============
+
+To submit bug reports please use `<https://github.com/marius311/pypico/issues>`_. 
+
     
-  
 
 Usage
 =====   
@@ -64,6 +76,15 @@ is a dictionary with a key corresponding to each output you requested.
 Usage Notes
 -----------
 
+* Each PICO datafile is trained on a particular region of parameter space, generally one
+  large enough to be relevant for typical analyses. If PICO is called for a set of 
+  parameters outside this range, a ``CantUsePICO`` error will be raised, and you should
+  use CAMB instead. If you are running an MCMC chain, this can slow you down significantly 
+  before the chain is burned in. To remedy this, set ``force=True`` to force PICO to return
+  results even outside its training region. The results won't be guaranteed to be accurate, 
+  but will likely be good enough to get your chain to converge to the region where PICO is
+  accurate. 
+
 * The PICO convention for multipole indexing is that an array entry ``arr[l]`` 
   corresponds to the l-th multiple. Since Python is 0-indexed, this means the 
   first entry in an array is the 0-th multiple. 
@@ -81,25 +102,44 @@ Usage Notes
   which can be accessed with::
   
     >> pico.example_inputs()
-    
 
 
 
-Installing Plugins for CAMB and CosmoMC
-=======================================
+Calling PICO from C/C++/Fortran
+===============================
 
-Follow the instruction in this section if you'd like to,
+PICO can be called from C/C++ and Fortran. 
 
-* Have your code which currently calls ``CAMB_GetResults`` used PICO instead
-* Have CosmoMC use PICO
+C/C++ Interface
+---------------
+
+To call PICO from C/C++, you should include the following two header files::
+
+    #include <python.h>
+    #include "pico.h"
+
+Documentation for the functions defined in ``pico.h`` can be found in the
+``pico.pyx`` file.
+
+Fortran Interface
+-----------------
+
+To call PICO from Fortran, you should use the following module::
+
+    use fpico
+
+Documentation for the functions in the fpico module can be found in the
+``fpico_interface.f90`` file. 
+
+* Note that the Fortran interface is built on C, and to ensure integer/real byte-sizes
+  are the same between Fortran and C, independent of compiler, they are defined 
+  by hand as ``fpreal`` and ``fpint`` in ``fpico_interface.f90`` and ``pico.pyx``. 
 
 
-Linking
--------
+Compiling and Linking
+---------------------
 
-When you installed PICO, a static library ``libpico.a`` was created
-which allows PICO to be called from C, C++, Fortran, or any other 
-language which can understand the symbols in the library. To link 
+When you installed PICO, a static library ``libpico.a`` was created. To link 
 your code against this library, PICO provides an easy way to get 
 include and link flags on your platform. To print out the necessary flags, call::
     
@@ -111,66 +151,51 @@ You should put these calls directly in your Makefile via::
     $(shell python -c "import pypico; print pypico.get_link()")
 
 
-Plugin Folder
--------------
+The fortran interface file ``fpico_interface.f90`` should be recompiled each time
+along side your program, as it must use the same Fortran compiler. The
+location of this file can be accessed from your Makefile via::
 
-You can find the various plugin files in a folder ``plugin`` in the archive.
-If you installed PICO via ``pip`` or ``easy_install``, you can find the location
-of the plugins by running::
-
-    python -c "import pypico; print pypico.get_folder()"
+    $(shell python -c "import pypico; print pypico.get_folder()")/fpico_interface.f90
 
 
-CAMB Plugin
------------
 
-If your code is set up to call the CAMB function ``CAMB_GetResults``, then 
-it should be trivial to use the PICO version called ``PICO_GetResults`` instead.
-The PICO version will fall back on the CAMB version if called with parameters
-for which it cannot calculate the relevant quantities. 
+Using PICO with CosmoMC
+=======================
 
-To install the CAMB plugin, do the following:
+As of Apr 2014, partial PICO support is built into CosmoMC. 
+See `<http://cosmologist.info/cosmomc/>`_ for instructions.
+
+
+
+Using PICO in place of CAMB
+=======================================
+
+If you have a code which currently calls ``CAMB_GetResults``, 
+its easy to swap in ``PICO_GetResults`` which uses PICO instead
+(and falls back on the CAMB version for parameters ouside of the
+PICO training region).
+
+To install the CAMB plugin:
 
 * Copy ``plugins/camb/pico_camb.f90`` to the folder containing your code
-* In your Makefile, make sure ``pico_camb.f90`` gets compiled. 
+* In your Makefile, make sure ``pico_camb.f90`` gets compiled and ``pico_camb.o`` gets included in your executable.
 * Add a call ``fpico_load(file)`` to load a PICO datafile.
 * Replace ``CAMB_GetResults`` with ``PICO_GetResults``
 * Add ``use pico_camb`` wherever you need ``PICO_GetResults``
-* Compile your code, making sure to use the correct include/link flags (see `Linking`_).
-* Add the key ``pico_datafile`` to your parameter file.
-
-
-
-CosmoMC Plugin
---------------
-
-PICO can also be plugged into CosmoMC. 
-
-To install the CosmoMC plugin, do the following:
-
-* Copy ``plugins/cosmomc/CMB_Cls_pico.f90`` and ``plugins/camb/pico_camb.f90`` 
-  to the CosmoMC source folder
-* Replace ``driver.f90`` in the CosmoMC source folder with the one in ``plugins/cosmomc``
-* In your CosmoMC Makefile, add the line ``CMB_Cls_pico.o: pico_camb.o`` 
-* In your CosmoMC Makefile, replace references to ``CMB_Cls_simple`` 
-  with references to ``CMB_Cls_pico`` 
-* Add the correct include/link flags to the Makefile (see `Linking`_).
-* Add the key ``pico_datafile`` to your parameter file.
-
+* Compile your code, making sure to use the correct include/link flags (see `Compiling and Linking`_).
 
 
 Known Issues
 ============
 
-* ``-fast`` with Intel Fortran does not work
-* The CosmoMC plugin does not support PICO datafiles which provide the WMAP likelihood. 
+* ``-fast`` with Intel Fortran does not work in some cases. 
 
 
 Authors
 =======
 
-The main author of PICO is Marius Millea (feel free to send questions/comments to mmillea@ucdavis.edu). 
-
+PICO is written by Marius Millea (feel free to send questions/comments to mmillea@ucdavis.edu). 
+The CosmoMC plugin was largely written by Antony Lewis and Silvia Galli. 
 PICO was originally created by Chad Fendt and Ben Wandelt (see `<http://arxiv.org/abs/0712.0194>`_) 
 
 

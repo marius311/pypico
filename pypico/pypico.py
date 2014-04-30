@@ -3,7 +3,7 @@ Parameters for the Impatient Cosmologist
 Author: Marius Millea
 """
 
-_version = '3.1.0'
+_version = '3.3.0'
 
 import cPickle, imp, os, sys, numpy, hashlib, time
 from distutils.sysconfig import get_config_var, PREFIX, get_python_inc
@@ -85,7 +85,7 @@ def _version_ok(version):
     global _version
     mine = map(int,_version.split('.'))
     theirs = map(int,version.split('.'))
-    return mine[:2]==theirs[:2] and mine[2]>=theirs[2]
+    return mine[0]==theirs[0] and mine[1]>=theirs[1]
 
 
 def load_pico(datafile, verbose=False, module=None, check_version=True):
@@ -127,7 +127,7 @@ def load_pico(datafile, verbose=False, module=None, check_version=True):
         if 'version' not in data:
             print "Warning: PICO datafile does not have version. Can't check compatibility."
         elif not _version_ok(data.get('version')):
-            raise Exception("You PICO version (%s) and the PICO version used to create the datafile '%s' (%s) are incompatible."%(_version,datafile,data['version']))
+            raise Exception("Your PICO version (%s) and the PICO version used to create the datafile '%s' (%s) are incompatible. Rerun with check_version=False to ignore this message."%(_version,datafile,data['version']))
 
     pico = cPickle.loads(data['pico'])
     data.pop('pico')
