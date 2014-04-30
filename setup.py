@@ -1,4 +1,6 @@
 import sys
+from distutils.sysconfig import get_python_inc
+from distutils.version import StrictVersion
 
 #Do some version checking
 if (sys.version_info < (2,7)) or (sys.version_info > (3,)):
@@ -16,8 +18,6 @@ checklib('scipy','SciPy','0.10.1')
 
 from numpy.distutils.core import setup
 from numpy.distutils.misc_util import Configuration
-from distutils.sysconfig import get_python_inc
-from distutils.version import StrictVersion
 
 
 # By default don't try to use Cython to compile the pyx file,
