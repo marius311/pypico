@@ -9,25 +9,21 @@ To install PICO, download and extract the archive, and from
 the top folder run::
 
     python setup.py build
-    python setup.py install
+    python setup.py install [--user]
 
-or, to automatically download the archive and install PICO
-in one command, run either of::
+or, if you have PIP installed, you can automatically download PICO
+and install it in one command with::
 
-    easy_install pypico
+    pip install pypico [--user] [--upgrade]
     
-or::
 
-    pip install pypico
-    
-depending on which is available on your system.
-    
 
 Install notes
 -------------
-* If you don't have root access, you can append the option ``--user`` 
-  to any of these install commands to install PICO under your home directory 
-  instead of system wide.
+* If you don't have root access, the ``--user`` option installs
+  PICO in your home directly.
+* The ``--upgrade`` option forces the newest version to be installed. 
+* ``easy_install`` does not currently work.
 
 Requirements
 ------------
