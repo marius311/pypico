@@ -114,13 +114,14 @@ def load_pico(datafile, verbose=False, module=None, check_version=True):
     if module:
         imp.load_source(data['module_name'],module)
     else:
-        code = data['code']
-        try:
-            mymod = imp.new_module(data['module_name'])
-            exec code in mymod.__dict__
-            sys.modules[data['module_name']]=mymod
-        except Exception as e:
-            raise Exception("Error executing PICO code for datafile '%s'\n%s"%(datafile,e))
+        if data['module_name'] not in sys.modules:
+            code = data['code']
+            try:
+                mymod = imp.new_module(data['module_name'])
+                exec code in mymod.__dict__
+                sys.modules[data['module_name']]=mymod
+            except Exception as e:
+                raise Exception("Error executing PICO code for datafile '%s'\n%s"%(datafile,e))
 
     if check_version:
         if 'version' not in data:
