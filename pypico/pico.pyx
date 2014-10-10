@@ -124,12 +124,12 @@ cdef public pico_compute_result_dict(pico, params, outputs):
         if verbose:
             print 'Calling PICO with parameters: %s'%params
             print 'Getting the outputs: %s'%outputs
-            try:
-                result = pico.get(outputs=outputs,**params)
-                if verbose: print 'Succesfully called PICO.'
-                return result
-            except CantUsePICO as c:
-                if verbose: print 'Failed to call PICO: %s'%c
+        try:
+            result = pico.get(outputs=outputs,**params)
+            if verbose: print 'Succesfully called PICO.'
+            return result
+        except CantUsePICO as c:
+            if verbose: print 'Failed to call PICO: %s'%c
     except Exception as e:
         handle_exception(e)
 
