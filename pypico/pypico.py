@@ -169,5 +169,5 @@ def create_pico(codefile,datafile,args=None,existing_pico=None):
     with open(datafile,'w') as f: cPickle.dump({'code':open(codefile).read(),
                                                 'module_name':name,
                                                 'pico':cPickle.dumps(pico,protocol=2),
-                                                'version':_version},
+                                                'version':__version__},
                                                 f,protocol=2)
