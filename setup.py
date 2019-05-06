@@ -44,8 +44,7 @@ config = Configuration('pypico',
     url='https://github.com/marius311/pypico',
     license='LICENSE.txt',
     description='Quickly compute the CMB powerspectra and matter transfer functions.',
-    long_description=open('README.md').read(),
-    long_description_content_type='text/markdown'
+    long_description=open('README.md').read()
 )
 
 
@@ -60,7 +59,7 @@ config.add_installed_library('pico',
 config.add_data_files(('','pypico/fpico_interface.f90'))
 config.add_data_files(('','pypico/pico.h'))
 config.add_data_files('plugins/camb/*')
-config.add_data_files('README.rst')
+config.add_data_files('README.md')
 
 
 setup(**config.todict())
