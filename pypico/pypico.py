@@ -3,9 +3,9 @@ Parameters for the Impatient Cosmologist
 Author: Marius Millea
 """
 
-__version__ = '3.3.0'
+__version__ = '4.0.0'
 
-import cPickle, imp, os, sys, numpy, hashlib, time
+import pickle, imp, os, sys, numpy, hashlib, time
 from distutils.sysconfig import get_config_var, PREFIX, get_python_inc
 
 """ Loaded datafiles will reside in this empty module. """
@@ -82,8 +82,8 @@ class CantUsePICO(Exception):
 
 def _version_ok(version):
     """Checks for compatibility of a PICO datafile."""
-    mine = map(int,__version__.split('.'))
-    theirs = map(int,__version__.split('.'))
+    mine = list(map(int,__version__.split('.')))
+    theirs = list(map(int,__version__.split('.')))
     return mine[0]==theirs[0] and mine[1]>=theirs[1]
 
 
@@ -107,7 +107,7 @@ def load_pico(datafile, verbose=False, module=None, check_version=True):
     """
 
     try:
-        with open(datafile) as f: data = cPickle.load(f)
+        with open(datafile,"rb") as f: data = pickle.load(f)
     except Exception as e:
         raise Exception("Failed to open PICO datafile '%s'\n%s"%(datafile,e.message))
 
@@ -118,18 +118,18 @@ def load_pico(datafile, verbose=False, module=None, check_version=True):
             code = data['code']
             try:
                 mymod = imp.new_module(data['module_name'])
-                exec code in mymod.__dict__
+                exec(code, mymod.__dict__)
                 sys.modules[data['module_name']]=mymod
             except Exception as e:
                 raise Exception("Error executing PICO code for datafile '%s'\n%s"%(datafile,e))
 
     if check_version:
         if 'version' not in data:
-            print "Warning: PICO datafile does not have version. Can't check compatibility."
+            print("Warning: PICO datafile does not have version. Can't check compatibility.")
         elif not _version_ok(data.get('version')):
             raise Exception("Your PICO version (%s) and the PICO version used to create the datafile '%s' (%s) are incompatible. Rerun with check_version=False to ignore this message."%(_version,datafile,data['version']))
 
-    pico = cPickle.loads(data['pico'])
+    pico = pickle.loads(data['pico'],encoding="latin1")
     data.pop('pico')
     pico._pico_data = data
     return pico
@@ -157,7 +157,7 @@ def create_pico(codefile,datafile,args=None,existing_pico=None):
             PICO object with the given code
     """
 
-    print "Creating PICO datafile..."
+    print("Creating PICO datafile...")
     if existing_pico is None:
         name = 'pypico.datafiles.%s'%(hashlib.md5(os.path.abspath(codefile) + time.ctime()).hexdigest())
         mymod = imp.load_source(name,codefile)
@@ -165,9 +165,9 @@ def create_pico(codefile,datafile,args=None,existing_pico=None):
     else:
         pico = load_pico(existing_pico)
         name = pico._pico_data['module_name']
-    print "Saving '%s'..."%(os.path.basename(datafile))
-    with open(datafile,'w') as f: cPickle.dump({'code':open(codefile).read(),
+    print("Saving '%s'..."%(os.path.basename(datafile)))
+    with open(datafile,'w') as f: pickle.dump({'code':open(codefile).read(),
                                                 'module_name':name,
-                                                'pico':cPickle.dumps(pico,protocol=2),
+                                                'pico':pickle.dumps(pico,protocol=2),
                                                 'version':__version__},
                                                 f,protocol=2)

@@ -8,8 +8,8 @@ if skip_version_check:
     sys.argv.remove('--skip_version_check')
 else:
     skipmsg = "Run with --skip_version_check to suppress this error (PICO may not work correctly)."
-    if (sys.version_info < (2,7)) or (sys.version_info > (3,)):
-        raise Exception("PICO requires Python version 2.7.X. "+skipmsg)
+    if (sys.version_info < (3,)):
+        raise Exception("PICO requires Python version 3.X. "+skipmsg)
     def checklib(lib,name,version):
       try:
           mod = __import__(lib)
