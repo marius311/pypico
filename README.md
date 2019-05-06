@@ -1,18 +1,25 @@
 # PICO (Parameters for the Impatient Cosmologist)
 
+PICO computes Cosmic Microwave Background power spectra and matter transfer functions orders of magnitude faster than [CAMB](https://camb.info/) or [CLASS](https://class-code.net/). It does so by fitting an interpolating function to various training data (much of this training data is computed by volunteers at [Cosmology@Home](https://www.cosmologyathome.org)). This is accurate enough for parameter estimation from Planck satellite data. 
+
+The original PICO was described in https://arxiv.org/abs/astro-ph/0606709 and https://arxiv.org/abs/0712.0194, although only the very basic idea of those papers remain in the current version. No updated paper exists, however, so please cite those papers if you are using PICO. Feel free to file an [Issue](https://github.com/marius311/pypico/issues) if you find bugs or need any help.
+
+
 ## Installation
 
-To install PICO, download and extract the archive, and from the top folder run:
+You can install PICO via Pip:
 
 ```
+pip install git+https://github.com/marius311/pypico [--user] [--upgrade]
+```
+
+or you can install from source by cloning this repostory and running:
+
+```
+git clone https://github.com/marius311/pypico
+cd pypico
 python setup.py build
 python setup.py install [--user]
-```
-
-or, if you have PIP installed, you can automatically download PICO and install it in one command with:
-
-```
-pip install pypico [--user] [--upgrade]
 ```
 
 
@@ -20,18 +27,12 @@ pip install pypico [--user] [--upgrade]
 
 * If you don't have root access, the `--user` option installs PICO in your home directly.
 * The `--upgrade` option forces the newest version to be installed. 
-* `easy_install` does not currently work.
 
 ### Requirements
 
 * Python 3.X
 * NumPy (>=1.6.1)
 * SciPy (>=0.10.1)
-
-
-## Troubleshooting
-
-To submit bug reports or ask for help, please submit an [Issue](https://github.com/marius311/pypico/issues).
 
 
 ## Usage
@@ -165,6 +166,4 @@ To install the CAMB plugin:
 
 ## Authors
 
-PICO is written by [Marius Millea](https://cosmicmar.com).
-The CosmoMC plugin was largely written by Antony Lewis and Silvia Galli. 
-PICO was originally created by Chad Fendt and Ben Wandelt (see http://arxiv.org/abs/0712.0194)
+PICO is written by [Marius Millea](https://cosmicmar.com). The CosmoMC plugin was largely written by Antony Lewis and Silvia Galli. PICO was originally created by Chad Fendt and Ben Wandelt.

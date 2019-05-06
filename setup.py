@@ -37,14 +37,15 @@ if build_cython:
 
 config = Configuration('pypico',
     name='pypico',
-    version='3.3.0',
+    version='4.0.0',
     author='Marius Millea',
-    author_email='mmillea@ucdavis.edu',
+    author_email='mariusmillea@gmail.com',
     packages=['pypico'],
-    url='https://sites.google.com/a/ucdavis.edu/pico',
+    url='https://github.com/marius311/pypico',
     license='LICENSE.txt',
     description='Quickly compute the CMB powerspectra and matter transfer functions.',
-    long_description=open('README.rst').read()
+    long_description=open('README.md').read(),
+    long_description_content_type='text/markdown'
 )
 
 
