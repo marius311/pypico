@@ -122,21 +122,21 @@ Documentation for the functions in the fpico module can be found in the `fpico_i
 When you installed PICO, a static library `libpico.a` was created. To link your code against this library, PICO provides an easy way to get include and link flags on your platform. To print out the necessary flags, call:
 
 ```sh     
-python -c "import pypico; print pypico.get_include()"
-python -c "import pypico; print pypico.get_link()"
+python -c "import pypico; print(pypico.get_include())"
+python -c "import pypico; print(pypico.get_link())"
 ```
     
 You should put these calls directly in your Makefile via:
 
 ```makefile
-$(shell python -c "import pypico; print pypico.get_link()")
+$(shell python -c "import pypico; print(pypico.get_link())")
 ```
 
 
 The fortran interface file `fpico_interface.f90` should be recompiled each time along side your program, as it must use the same Fortran compiler. The location of this file can be accessed from your Makefile via:
 
 ```makefile
-$(shell python -c "import pypico; print pypico.get_folder()")/fpico_interface.f90
+$(shell python -c "import pypico; print(pypico.get_folder())")/fpico_interface.f90
 ```
 
 
